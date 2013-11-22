@@ -1,0 +1,345 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+{=| Functions |=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ function RS_InvGetSlotBounds: TBoxArray
+ function RS_InvGetBounds: TBox;   
+ function PointToInvSlot(Pt:TPoint): Integer; 
+ function RS_InvGetFilledSlotsEx(CheckTab:Boolean): TIntArray; 
+ function RS_InvGetFilledSlots: TIntArray;  
+ function RS_InvSlotUsedEx(SlotID:Integer; Safety:Boolean): Boolean;
+ function RS_InvSlotUsed(SlotID:Integer): Boolean;   
+ function RS_InvCount: Integer;       
+ function RS_InvIsFull: Boolean;  
+ function RS_InvIsEmpty: Boolean; 
+ function RS_InvSlotCenter(SlotID:Integer): TPoint;  
+ function RS_MouseToInvSlot(SlotID:Integer): TPoint;
+ function RS_DropPattern(PatternID: Integer): TIntArray; 
+ function RS_DropPatternErrorize(Pattern:TIntArray; Errors:Integer): TIntArray;
+ function RS_DropPatternGaussEx(Scale: Integer): Integer;
+ function RS_DropPatternGauss: Integer;           
+ function RS_InvDropItemEx(SlotID: Integer; Safety:Boolean): Boolean; 
+ function RS_InvDropItem(SlotID: Integer): Boolean;    
+ function RS_InvDropItemsGEx(Slots: TIntegerArray; PatternID: Integer; Errorize, Invert: Boolean): Integer;   
+ function RS_InvDropItemsEx(Slots: TIntegerArray; Invert: Boolean): Integer; 
+ function RS_InvDropItems(Slots: TIntegerArray): Integer;  
+ function RS_InvDropAllExclude(Exclude: TIntegerArray): Integer;  
+ function RS_InvDropAll: Integer;
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+const
+  InvSlotWidth = 42;
+  InvSlotHeight= 36;
+
+
+{*   
+ Calculate inventory boxes.
+*}
+function RS_InvGetSlotBounds: TBoxArray;
+begin 
+  Result := RS_InvSlotBounds; //Can be loaded on startup.
+end;
+
+
+{*   
+ Returns the bounds of the inventory.
+*}
+function RS_InvGetBounds: TBox;
+begin 
+  Result := RS_InvBounds; 
+end;
+
+
+{*    
+ Calculates what slot the point is hovering.
+*}
+function PointToInvSlot(Pt:TPoint): Integer;
+var
+  x,y,W:Integer;
+  Area:TBox;
+begin
+  Result := -1;
+  Area := RS_InvGetBounds;
+  if not(PointInBox(Pt, Area)) then Exit;
+  W := (Area.X2 - Area.X1) + 1;
+  X := (Pt.x - Area.x1) div InvSlotWidth;
+  Y := (Pt.y - Area.y1) div InvSlotHeight;
+  Result := (Y * (W div InvSlotWidth)) + X;
+end;
+
+
+{*    
+ Find all filled inventory slots, compatible with banking.
+*}
+function RS_InvGetFilledSlotsEx(CheckTab:Boolean): TIntArray;
+var
+  TBA: TBoxArray;
+  i,j,x,y:Integer;
+begin
+  if CheckTab and not(RS_OpenTab(RS_Tab_Inventory)) then Exit;
+  TBA := RS_InvGetSlotBounds;
+  SetLength(Result, Length(TBA));
+  j := 0;
+  for i:=0 to High(TBA) do
+    if FindColor(x,y,65536, TBA[i].x1,TBA[i].y1,TBA[i].x2,TBA[i].y2) then
+    begin
+      Result[j] := i;
+      Inc(j);
+    end;
+  SetLength(Result, j);
+end;
+
+
+{*  
+ Find all filled inventory slots.
+*}
+function RS_InvGetFilledSlots: TIntArray;
+begin
+  Result := RS_InvGetFilledSlotsEx(True);
+end;
+
+
+{*  
+ Check if a slot is in use.. Banking compatible. 
+*}
+function RS_InvSlotUsedEx(SlotID:Integer; Safety:Boolean): Boolean;
+var
+  TBA: TBoxArray;
+  B: TBox;
+  x,y:Integer;
+begin
+  Result := False;
+  if Safety then
+    if Not(InRange(SlotID,0,27)) or Not(RS_OpenTab(RS_Tab_Inventory)) then Exit;
+  TBA := RS_InvGetSlotBounds;
+  B := TBA[SlotId];
+  Result := FindColor(x,y,65536, B.x1, B.y1, B.x2, B.y2);
+end;
+
+
+{*    
+ Check if a slot is in use.
+*}
+function RS_InvSlotUsed(SlotID:Integer): Boolean;
+begin
+  Result := RS_InvSlotUsedEx(SlotID, True);
+end;
+
+
+{*    
+ Check if the inventory is full.
+*}
+function RS_InvCount: Integer;
+begin
+  Result := Length(RS_InvGetFilledSlotsEx(True));
+end;
+
+
+{*    
+ Check if the inventory is full.
+*}
+function RS_InvIsFull: Boolean;
+begin
+  Result := Length(RS_InvGetFilledSlotsEx(True)) = 28;
+end;
+
+
+{*    
+ Check if the inventory is empty.
+*}
+function RS_InvIsEmpty: Boolean;
+begin
+  Result := Length(RS_InvGetFilledSlotsEx(True)) = 0;
+end;
+
+
+{*   
+ Returns the center of the given inventoryslot.
+*}
+function RS_InvSlotCenter(SlotID:Integer): TPoint;
+var
+  TBA: TBoxArray;
+begin
+  if Not(InRange(SlotID,0,27)) then Exit;
+  TBA := RS_InvGetSlotBounds;
+  Result := BoxCenter(TBA[SlotID]);
+end;
+
+
+{*   
+ Moves the mouse to the given inventory slot.
+ It moves to a point around the center, using gaussian distribution.
+*}
+function RS_MouseToInvSlot(SlotID:Integer): TPoint;
+var
+  TBA: TBoxArray;
+begin
+  if Not(InRange(SlotID,0,27)) then Exit;
+  TBA := RS_InvGetSlotBounds;
+  MMouseCircleEx(BoxCenter(TBA[SlotID]), 4,12);
+  GetMousePos(Result.x,Result.y);
+end;
+
+
+{*   
+ Returns a TIA of inverntory slots, there order is defined by PatternID.
+*}
+function RS_DropPattern(PatternID: Integer): TIntArray;
+begin
+  if not(InRange(PatternID, 0, 5)) then
+    PatternID := 0;
+  case PatternID of
+    //Column wise (zigzag-style)
+    0: Result := [0, 1, 2, 3, 7, 6, 5, 4, 8, 9, 10, 11, 15, 14, 13, 12, 16, 17, 18, 19, 23, 22, 21, 20, 24, 25, 26, 27]; 
+    //Column wise (Z-style)
+    1: Result := [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]; 
+    //Column wise (reversed zigzag-style)
+    2: Result := [3, 2, 1, 0, 4, 5, 6, 7, 11, 10, 9, 8, 12, 13, 14, 15, 19, 18, 17, 16, 20, 21, 22, 23, 27, 26, 25, 24];
+    //Reversed column wise   
+    3: Result := [3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 19, 18, 17, 16, 23, 22, 21, 20, 27, 26, 25, 24]; 
+    //Reversed row wise 
+    4: Result := [3, 7, 11, 15, 19, 23, 27, 2, 6, 10, 14, 18, 22, 26, 1, 5, 9, 13, 17, 21, 25, 0, 4, 8, 12, 16, 20, 24]; 
+    //Row wise
+    5: Result := [0, 4, 8, 12, 16, 20, 24, 1, 5, 9, 13, 17, 21, 25, 2, 6, 10, 14, 18, 22, 26, 3, 7, 11, 15, 19, 23, 27]; 
+  end;
+end;
+
+
+{*   
+ Given a TIA of inverntory slots, this function will add a few simple errors in the order.
+ I don't like strict patterns.. -.-'
+*}
+function RS_DropPatternErrorize(Pattern:TIntArray; Errors:Integer): TIntArray;
+var i,j,h:Integer;
+begin
+  Result := CopyTIA(Pattern);
+  H := High(Pattern);
+  for i:=0 to Errors do
+  begin 
+    j := RandomRange(1,H);
+    Swap(Result[j], Result[j-1]);
+  end; 
+end;
+
+
+{*   
+ Selects a random number between 0 and 5. It weights towards 0 by the scale you give.
+*}
+function RS_DropPatternGaussEx(Scale: Integer): Integer;
+var GaussTable:TIntArray;
+begin
+  GaussTable := XT_LogscaleTIA([0,1,2,3,4,5], Scale);
+  Result := GaussTable[RandomRange(0, High(GaussTable))];
+end;
+
+
+{*   
+ Selects a random number between 0 and 5. It weights strongly towards 0.
+*}
+function RS_DropPatternGauss: Integer;
+var GaussTable:TIntArray;
+begin
+  GaussTable := XT_LogscaleTIA([0,1,2,3,4,5], 5);
+  Result := GaussTable[RandomRange(0, High(GaussTable))];
+end;
+
+
+{*   
+ Drops the item in the selected inventory slot..
+*}
+function RS_InvDropItemEx(SlotID: Integer; Safety:Boolean): Boolean;
+begin
+  Result := False;
+  if Safety then
+    if Not(InRange(SlotID,0,27)) or Not(RS_OpenTab(RS_Tab_Inventory)) then Exit;
+  if Not(RS_InvSlotUsed(SlotID)) then
+  begin
+    Result := True;
+    Exit;
+  end; 
+  if RS_OpenChooseOption(RS_MouseToInvSlot(SlotID)) then
+  begin
+    Result := RS_ChooseOptionAny(['Drop', 'rop']); 
+    if not(Result) then RS_CloseChooseOption;
+  end;
+end;
+
+
+{*   
+ Drops the given item (by slot) if it's not empty...
+*}
+function RS_InvDropItem(SlotID: Integer): Boolean;
+begin
+  Result := RS_InvDropItemEx(SlotID, True);
+end;
+
+
+{*   
+ Drops the items in the selected slots.. If invert, then it drops
+ the onse not in the slots.
+ The result is the number of slots which are free now.
+ This extended version allows for a few extra params... Among am you will find
+ Errorize: Boolean, if this is checked, it might be autogenerated some simple
+ mistakes.
+*}
+function RS_InvDropItemsGEx(Slots: TIntegerArray; PatternID: Integer; Errorize, Invert: Boolean): Integer;
+var 
+  i,j: Integer;
+  Pattern:TIntArray; 
+begin
+  Result := 0;     
+  Pattern := RS_DropPattern(PatternID);
+  if Errorize then
+    Pattern := RS_DropPatternErrorize(Pattern, RS_DropPatternGauss());
+  if not(RS_OpenTab(RS_Tab_Inventory)) then Exit;
+  for j:=0 to 1 do //Go trough it twice (if an item or two was missed..)
+    for i:=0 to 27 do
+    begin
+      if (TIAContains(Slots, Pattern[I]) xor Invert) then
+        if (RS_InvDropItemEx(Pattern[I], False)) then
+          Inc(Result);
+    end;
+end;
+
+
+{*   
+ Drops the given items (by Slot-IDs). It has a very human style, with some
+ humanlike mistakes, and selects a the pattern by it self, but focuses towards the
+ first/main pattern..
+*}
+function RS_InvDropItemsEx(Slots: TIntegerArray; Invert: Boolean): Integer;
+begin
+  Result := RS_InvDropItemsGEx(Slots, RS_DropPatternGauss(), True, Invert);
+end;
+
+
+{*   
+ Drop the given inventory items.
+*}
+function RS_InvDropItems(Slots: TIntegerArray): Integer;
+begin
+  Result := RS_InvDropItemsGEx(Slots, RS_DropPatternGauss(), True, False);
+end;
+
+
+{*   
+ Drop all inventory items but the once excluded.
+*}
+function RS_InvDropAllExclude(Exclude: TIntegerArray): Integer;
+begin
+  Result := RS_InvDropItemsEx(Exclude, True);
+end;
+
+
+{*   
+ Drop all inventory items.
+*}
+function RS_InvDropAll: Integer;
+begin
+  Result := RS_InvDropAllExclude([]);
+end;
+
+
+

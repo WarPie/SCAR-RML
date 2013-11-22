@@ -1,0 +1,77 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+type
+  T2DRegexMatchArray = Array of TRegexMatchArray; 
+
+
+function PregMatchAll(pattern, subject: string): TStrArray;
+var
+  matches: TRegexMatchArray;  
+  CurpossE, size: Integer;
+begin
+  while PregMatchEx(pattern, subject, matches) do 
+  begin                                                 
+    CurpossE := (Length(matches[0].MatchedText) + Matches[0].OffSet);
+    subject := Right(subject, (Length(subject) - CurpossE));   
+    size := Length(Matches)
+    SetLength(Result, size + 1);
+    Result[size] := matches[0].MatchedText;
+  end;    
+end;
+
+  
+function PregMatchAllEx(pattern, subject: string; var Matches:T2DRegexMatchArray): Boolean;
+var
+  MarchArr: TRegexMatchArray;  
+  CurpossE, size: Integer;
+begin
+  Result := False;
+  while PregMatchEx(pattern, subject, MarchArr) do 
+  begin                                                 
+    CurpossE := (Length(MarchArr[0].MatchedText) + MarchArr[0].OffSet);
+    subject := Right(subject, (Length(subject) - CurpossE));
+    size := Length(Matches)
+    SetLength(Matches, size + 1);
+    Matches[size] := MarchArr;
+  end;
+  if Length(Matches)>0 then
+    Result := True    
+end;
+
+
+function StrContains(SubStr, Subject: string): Boolean;
+begin
+  Result := Pos(substr, subject) <> 0;
+end;
+
+
+function StrContainsAny(SubStrArr:TStrArray; subject: string): Boolean;
+var i:Integer;
+begin
+  Result := True;
+  for i:=0 to High(SubStrArr) do
+    if (Pos(SubStrArr[i], subject) <> 0) then Exit;
+  Result := False;
+end;
+
+
+function StrContainsAll(SubStrArr:TStrArray; subject: string): Boolean;
+var i:Integer;
+begin
+  Result := False;
+  for i:=0 to High(SubStrArr) do
+    if (Pos(SubStrArr[i], subject) = 0) then Exit;
+  Result := True;
+end;
+
+
+
+
+
+
+
+
+

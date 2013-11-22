@@ -1,0 +1,56 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+(* 
+  Get the pixel differance.
+*)
+function RS_GetPixError(Area:TBox; WTime:Integer; Percent:Boolean): Integer;
+var
+  Pix1, Pix2: TIntArray;
+begin
+  Result := 0;
+  Pix1 := XT_GetClientColors(Area);
+  Wait(WTime);
+  Pix2 := XT_GetClientColors(Area);   
+  Result := XT_TIAMatches(Pix1, Pix2, Percent, False); 
+end;
+
+
+(* 
+  Get the average change over a longer time.
+*)
+function RS_GetAvgPixError(Area:TBox; MaxTime, WTime:Integer; Percent:Boolean): Integer;
+var
+  Iter, Error: Integer;
+begin
+  Iter := 0;
+  MaxTime := GetTimeRunning + MaxTime;
+  while GetTimeRunning < MaxTime do
+  begin
+    Iter := Iter + 1;
+    Error := RS_GetPixError(Area,WTime,Percent);
+  end;
+  Result := Error div Iter;
+end;
+
+
+(* 
+  ...
+*)
+function RS_IsAnimating(Area:TBox; MinError:Integer): Boolean;
+begin
+  Result := RS_GetAvgPixError(Area, 500,100, True) > MinError;
+end;
+
+
+(* 
+  ...
+*)
+function RS_IsMoving: Boolean;
+begin
+  Result := RS_GetPixError(Box(MMCX-30, MMCY-30, MMCX+30, MMCY+30), 400, True) > 6; //6 percent error.
+end;
+

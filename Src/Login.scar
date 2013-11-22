@@ -1,0 +1,288 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+type
+  RS_TLoginMessage = record 
+    CheckPt :TPoint; 
+    CheckMsg:String; 
+  end;  
+  
+  
+var
+  RS_LoginMessageArray: Array of RS_TLoginMessage; 
+  
+
+const
+  LOGIN_CONNECTING       = 10000;
+  LOGIN_IS_ONLINE        = 10001;
+  LOGIN_CONNETCION_ERROR = 10002;
+  LOGIN_INVALID          = 10003; 
+  LOGIN_DISABLED         = 10004;
+  LOGIN_ENTER_DETAILS    = 10005;
+  LOGIN_VOTE_TO_PLAY     = 10006;
+  LOGIN_ENTER_PASSWORD   = 10007;
+  LOGIN_ENTER_USERNAME   = 10008; 
+  LOGIN_INCORRECT_LOGINS = 10009; 
+  LOGIN_SERVER_UPDATE    = 10010;
+  LOGIN_FULL_WORLD       = 10011;
+  LOGIN_LOGIN_LIMIT      = 10013;
+  LOGIN_TRANSFERRING     = 10014;
+
+
+function RS_LoginMessage(CheckPt:TPoint; CheckMsg:String): RS_TLoginMessage;
+begin
+  Result.CheckPt := CheckPt;
+  Result.CheckMsg:= CheckMsg;
+end;
+
+
+{*
+  Converts a (Login_??) constant in to a index, and returns msg. 
+*}
+function RS_GetLoginMessageData(ID:Integer): RS_TLoginMessage;
+begin
+   Result := RS_LoginMessageArray[ID-10000]; 
+end;
+
+
+{*
+  Loads all the login messages.
+*}
+procedure RS_LoadLogin;
+begin
+  SetLength(RS_LoginMessageArray,15); 
+  RS_LoginMessageArray := [RS_LoginMessage(Point(307, 214), 'Connecting'),
+                           RS_LoginMessage(Point(270, 199), 'Your acc'),
+                           RS_LoginMessage(Point(293, 214), 'Error conn'),
+                           RS_LoginMessage(Point(261, 214), 'Invalid user'),
+                           RS_LoginMessage(Point(98, 214),  'Your account has'),
+                           RS_LoginMessage(Point(250, 214), 'Enter your'),
+                           RS_LoginMessage(Point(299, 199), 'You need to vote'),
+                           RS_LoginMessage(Point(238, 214), 'Please enter your username'),
+                           RS_LoginMessage(Point(288, 214), 'Please enter your password'),
+                           RS_LoginMessage(Point(233, 199), 'Too many'),
+                           RS_LoginMessage(Point(288, 199), 'The server'),
+                           RS_LoginMessage(Point(284, 199), 'RuneScape has'),
+                           RS_LoginMessage(Point(326, 199), 'This world is full'),
+                           RS_LoginMessage(Point(313, 199), 'Login limit'),
+                           RS_LoginMessage(Point(256, 199), 'You have only j')]; 
+end;
+
+
+{*
+  Frees all the login messages.
+*}
+procedure RS_FreeLogin;
+begin
+  SetLength(RS_LoginMessageArray, 0);
+end;
+
+
+(*
+ Check if the player is logged in
+*) 
+function RS_LoggedIn: Boolean;
+var TPA:TPointArray;
+begin
+  Result := False;
+  if FindColorTolEx(TPA, $20216b, 408,481,512,500, 35) then
+    if Length(TPA) >= 60 then Result := True;
+end;
+
+
+(*
+ Check if the player is logged out
+*) 
+function RS_LoggedOut: Boolean;
+var TPA:TPointArray;
+begin
+  Result := False;
+  if FindColorTolEx(TPA, $0b0b0b, 248,170,516,175, 1) then 
+    if Length(TPA) >= 450 then Result := True;
+end;
+
+//-----------------------------------------------------------------
+(*
+ ..
+*) 
+function RS_AtWelcomeScreen: Boolean;
+begin
+  Result := IsTextAtEx(304, 19, 'Welcome to RuneScape', 0, RS_NPCFont, False, False, 0, 0, cl_Red) or 
+            IsTextAtEx(360, 329, 'CLICK HERE TO PLAY', 0, RS_MainFont, False, False, 0, 0, cl_White);
+end;
+
+
+(*
+ ..
+*) 
+function RS_AtLogin: Boolean;
+begin
+  Result := IsTextAtEx(308, 239, 'Welcome to RuneScape', 0, RS_MainFont, False, False, 0, 0, cl_Yellow);
+end;
+
+
+(*
+ ..
+*) 
+function RS_AtLoginNewUserPage: Boolean;
+begin
+  Result := IsTextAtEx(345, 199, 'How to Play', 0, RS_MainFont, False, False, 0, 0, cl_Yellow);
+end;
+
+
+(*
+ ..
+*) 
+function RS_AtLoginDetails: Boolean;
+begin
+  Result := IsTextAtEx(272, 255, 'Login:', 0, RS_OptionFont, False, False, 0, 0, cl_White) or 
+            IsTextAtEx(274, 270, 'Password:', 0, RS_OptionFont, False, False, 0, 0, cl_White);
+end;
+
+
+(*
+ ..
+*) 
+function RS_AtLoginScreen: Boolean;
+begin
+  Result := True;
+  if RS_AtLoginNewUserPage then Exit;
+  if RS_AtLogin then Exit;
+  if RS_AtLoginDetails then Exit;
+  Result := False;
+end;
+
+
+(*
+ Janilabos work!
+*) 
+function RS07_GetLoginMessageID: Integer;
+var
+  h, i: Integer;
+begin
+  Result := -1;
+  if not RS_AtLoginDetails then
+    Exit;
+  h := High(RS_LoginMessageArray);
+  for i := 0 to h do
+    if IsTextAtEx(RS_LoginMessageArray[i].checkPt.X, RS_LoginMessageArray[i].checkPt.Y, RS_LoginMessageArray[i].checkMsg, 0, RS_MainFont, False, False, 0, 0, cl_Yellow) then
+    begin
+      Result := (10000 + i);
+      Break;
+    end;
+end;
+
+
+{   
+#---------------------------------------------------------------------
+def rs07_solveWelcomeScreen():
+    mouse.move_click((460,293), 1, rand=(50,12))
+    for _ in range(20): 
+        if not rs07_isLoginScreen():
+            general.randwait(0.25,0.5)
+        else:
+            break;
+    return rs07_isLoginScreen()
+
+def rs07_sloveLobbyScreen():
+    mouse.box([290,310,350,335], 1)
+    for _ in range(30):
+        general.wait(0.3)
+        if rs07_loggedIn(): 
+            return True
+    return False
+
+#---------------------------------------------------------------------
+#None
+def rs07_setNameAndPass(uname, pwd):
+    login_box = [272,256,555,271]
+    passw_box = [272,271,555,288]
+    info_box =  [272,256,555,288]
+    while 1:
+        data = target.find((255,255,0), info_box, 10)
+        if data: break;
+
+    pt = pointtools.mean_pt(data)
+    if point_in_rect(pt, passw_box):
+        keyboard.press_key('Tab')
+
+    keyboard.write_text(uname)
+    keyboard.press_key('Tab')
+    keyboard.write_text(pwd)
+    
+    return mouse.box([265,310,330,335], 1)
+   
+   
+#Bool
+def rs07_login(uname, pwd):
+    def invalidLogin():
+        if OCR.isTextAt2('Invalid', [245,210,520,240], 'UpChars2', ['yellow']):
+            return True
+
+    def resetFields():
+        if OCR.isTextAt2('Invalid', [245,210,520,240], 'UpChars2', ['yellow']):
+            mouse.box([425,310,500,340], 1)
+
+    #---------------------------------------
+    if rs07_loggedIn(): return True
+    resetFields()
+    
+    if rs07_isWelcomeScreen():
+        if not rs07_solveWelcomeScreen():
+            return False
+    if rs07_isLobbyScreen():
+        return rs07_sloveLobbyScreen()
+    
+    rs07_setNameAndPass(uname, pwd)
+    
+    for i in range(200):
+        if not(rs07_isLoginScreen()):
+            break;
+        general.wait(0.060)
+    
+    print "Connecting to server..."    
+    for i in range(200):
+        if not(rs07_isConnectScreen()):
+            break;
+        general.wait(0.060)
+    
+    if invalidLogin():
+        print "Bad username or password!"
+        return False
+          
+    for i in range(200):
+        if not(rs07_isLobbyScreen()):
+            general.wait(0.060)
+        else:
+            break
+    
+    if rs07_isLobbyScreen():
+        mouse.box([290,310,350,335], 1)
+        for _ in range(30):
+            general.wait(0.3)
+            if rs07_loggedIn(): 
+               print "Successfully logged in!"
+               return True
+
+    print "Did not manage to login!"
+    return False
+   
+   
+#Bool
+def rs07_logout(retry=True, drange=5):
+    if rs07_loggedOut(): 
+        return True
+
+    if tabs.rs07_setGameTab("Logout"):
+        for _ in range(drange):
+            mouse.box([581,368,700,388], 1)
+            general.randwait(1.0,3.2)
+            if rs07_loggedOut():
+                break;
+                
+        if rs07_loggedIn() and retry==True:
+                rs07_logout(retry=False)
+
+    return rs07_loggedOut()  }

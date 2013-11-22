@@ -1,0 +1,643 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+(* Colors as seen in the uptext *)
+const
+  clTextBlack  = $000000;
+  clTextWhite  = $E3E3E3;
+  clTextWhite2 = $D6D6D6;
+  clTextRed    = $1111EE;
+  clTextGreen  = $04CF05;
+  clTextRedS   = $0412E9;
+  clTextBlue   = $EE1111;
+  clTextYellow = $0AE6E6;
+  clTextOrange = $1478E3;
+  clTextOrange2= $3478D2;
+  clTextCyan   = $E6E619; 
+  clTextCyan2  = $C8CA03;
+  clTextPurple = $E60069;
+  clTextPink   = $E600c8;  
+  clTextGreen1 = $09CE10;
+  clTextGreen2 = $02CE35; 
+  clTextGreen3 = $00C87F;                    
+  
+var
+  RS_MainFont, RS_NPCFont, RS_OptionFont, RS_SmallFont:Integer; 
+  RS_SmallFont2, RS_StatFont, RS_UpFont2, RS_UpFont: Integer; 
+
+  RS_MainFontXT, RS_NPCFontXT, RS_OptionFontXT, RS_SmallFontXT: TChars; 
+  RS_SmallFont2XT, RS_StatFontXT, RS_UpFont2XT, RS_UpFontXT: TChars; 
+  
+  clTextEnsurance: TIntArray;
+     
+var
+  __bmpChooseOption: TSCARBitmap;
+  
+  
+(*   
+  Load all the needed fonts in to memory                
+*)
+procedure RS_LoadOCR;
+begin
+  RS_MainFont   := LoadChars2(FontDir + 'MainFont\');
+  RS_NPCFont    := LoadChars2(FontDir + 'NPCFont\');
+  RS_OptionFont := LoadChars2(FontDir + 'OptionFont\');
+  RS_SmallFont  := LoadChars2(FontDir + 'SmallFont\');
+  RS_SmallFont2 := LoadChars2(FontDir + 'SmallFont2\');
+  RS_StatFont   := LoadChars2(FontDir + 'StatFont\');
+  RS_UpFont2    := LoadChars2(FontDir + 'UpFontShadow\');
+  RS_UpFont     := LoadChars2(FontDir + 'UpFont\');  
+  
+  RS_MainFontXT   := XT_LoadFont(FontDir + 'MainFont\');
+  RS_NPCFontXT    := XT_LoadFont(FontDir + 'NPCFont\');
+  RS_OptionFontXT := XT_LoadFont(FontDir + 'OptionFont\');
+  RS_SmallFontXT  := XT_LoadFont(FontDir + 'SmallFont\');
+  RS_SmallFont2XT := XT_LoadFont(FontDir + 'SmallFont2\');
+  RS_StatFontXT   := XT_LoadFont(FontDir + 'StatFont\');
+  RS_UpFont2XT    := XT_LoadFont(FontDir + 'UpFontShadow\');
+  RS_UpFontXT     := XT_LoadFont(FontDir + 'UpFont\'); 
+  
+  clTextEnsurance := [clTextWhite2, clTextYellow, clTextCyan, 
+                      clTextPurple, clTextRed, clTextBlue, 
+                      clTextOrange, clTextOrange2, clTextRedS, 
+                      clTextCyan2,  clTextGreen, clTextGreen1, 
+                      clTextGreen2];   
+                      
+  __bmpChooseOption := TSCARBitmap.Create('deNrjZhBiiA1xx48YRgYg6GtkKaxqkAUHSgH9AwoTAQAdzy6e');
+end;
+ 
+ 
+(*   
+  Free all RS-fonts from memory.               
+*)
+procedure RS_FreeOCR;
+begin       
+  FreeChars2(RS_MainFont);
+  FreeChars2(RS_NPCFont);
+  FreeChars2(RS_OptionFont);
+  FreeChars2(RS_SmallFont);
+  FreeChars2(RS_SmallFont2);
+  FreeChars2(RS_StatFont);
+  FreeChars2(RS_UpFont2);
+  FreeChars2(RS_UpFont);
+   
+  XT_FreeFont(RS_MainFontXT);
+  XT_FreeFont(RS_NPCFontXT);
+  XT_FreeFont(RS_OptionFontXT);
+  XT_FreeFont(RS_SmallFontXT);
+  XT_FreeFont(RS_SmallFont2XT);
+  XT_FreeFont(RS_StatFontXT);
+  XT_FreeFont(RS_UpFont2XT);
+  XT_FreeFont(RS_UpFontXT);
+  
+  SetLength(clTextEnsurance, 0);   
+  __bmpChooseOption.Free;
+end;
+
+
+(*   
+ Simple function to get the uptext (Text in the Left-Top corner in RS)
+ Allows for modifiers. 
+*)
+function RS_GetUpTextEx(ThreshMod:Byte; Tolerance:Integer): String;
+var 
+  TPA,TPA2: TPointArray;
+  ATPA: T2DPointArray;
+  bmp: TSCARBitmap; 
+  client: TSCARClient;
+  Mat: T2DIntArray;
+begin
+  bmp := TSCARBitmap.Create('');
+  bmp.SetSize(470, 20);
+  Mat := XT_Bmp2Matrix(XT_ClientBMP(8,7,470,25), False); 
+  //Will be better if I made: XT_ImThresholdAdpativeBlocks
+  Mat := XT_ImThresholdAdaptive(Mat,0,255,False,TM_Mean,ThreshMod);
+  XT_BmpSetData(bmp, Mat, True); 
+  
+  //Ensureance
+  ColorToleranceSpeed(1);
+  FindColorsTolEx(TPA, clTextEnsurance, 8,7,470,26, Tolerance); 
+
+  OffsetTPA(TPA, -8,-7); 
+  ATPA := XT_ClusterTPAEx(TPA, 1,3, True);
+  XT_ATPAFilter(ATPA,10, 2,6,12,12, False);
+  TPA := MergeATPA(ATPA);
+  
+  //Processing
+  Client := SetClient(TSCARBitmapClient.Create(bmp));
+  FindColorTolEx(TPA2, 255, 0,0,469,19, 1);
+  ATPA := XT_ClusterTPAEx(TPA2, 1,3, True);
+  XT_ATPAFilter(ATPA, 10, 2,6,12,12, False);
+  TPA2 := MergeATPA(ATPA);
+  
+  TPA := XT_UniteTPA(TPA,TPA2, False);  
+  ATPA := XT_ClusterTPAEx(TPA, 1,1, True);
+  XT_ATPAFilter(ATPA, 1, 2,1,15,15, False);
+  TPA := MergeATPA(ATPA);
+  
+  bmp.Clear(0);
+  bmp.SetPixels(TPA, clRed); 
+  
+  //OCR     
+  Result := XT_GetTextAt(Box(0,0,469,19), RS_UpFontXT, 2, clRed, 1, 10, 1, '');
+  //GetTextAtEx(0, 0, 25, RS_UpFont, False, False, 0, 3, clRed, 255, True, tr_AllChars);
+  SetClient(client).Free;
+end;
+
+
+(*   
+ Simple function to get the uptext (Text in the Left-Top corner in RS)          
+*)
+function RS_GetUpText: String;
+begin
+  Result := RS_GetUpTextEx(85, 55);
+end;
+
+
+(*   
+ Check if the uptext contains your text..             
+*)
+function RS_IsUpText(Text: String): Boolean;
+begin
+  Result := StrContains(Text, RS_GetUpText);
+end;
+
+// With modifiers.
+function RS_IsUpTextEx(Text: String; ThreshMod:Byte; Tolerance:Integer): Boolean;
+begin
+  Result := StrContains(Text, RS_GetUpTextEx(ThreshMod, Tolerance));
+end;
+
+
+(*   
+ Check if the uptext contains any of your strings..            
+*)
+function RS_IsUpTextAny(TextArr: TStrArray): Boolean;
+begin
+  Result := StrContainsAny(TextArr, RS_GetUpText);
+end;
+
+// With modifiers.
+function RS_IsUpTextAnyEx(TextArr: TStrArray; ThreshMod:Byte; Tolerance:Integer): Boolean;
+begin
+  Result := StrContainsAny(TextArr, RS_GetUpTextEx(ThreshMod, Tolerance));
+end;
+
+
+(*   
+ Check if the uptext contains all of your strings.. 
+*)
+function RS_IsUpTextAll(TextArr: TStrArray): Boolean;
+begin
+  Result := StrContainsAll(TextArr, RS_GetUpText);
+end;
+
+// With modifiers.
+function RS_IsUpTextAllEx(TextArr: TStrArray; ThreshMod:Byte; Tolerance:Integer): Boolean;
+begin
+  Result := StrContainsAll(TextArr, RS_GetUpTextEx(ThreshMod, Tolerance));
+end;
+
+
+
+////----------------------------------------------------------------------------
+////----------------------------------------------------------------------------
+////----------------------------------------------------------------------------
+
+
+(*   
+ Returns the latest chat message. 
+*)
+function RS_GetChatMsgLast: String;
+begin
+  Result := XT_GetTextAtEx(Box(8,445,497,460), [RS_SmallFontXT], 1, [clBlack, clBlue], 1,2,1,'');
+end;
+
+
+(*   
+ Returns the chat message. 
+*)
+function RS_GetChatMsg(RowID:Integer): String;
+begin
+  if RowID > 7 then begin 
+    WriteLn('[WARNING] RowID out of range: ' + IntToStr(RowID) +'.');
+    Exit;
+  end;
+  RowID := RowID * 14;
+  Result := XT_GetTextAtEx(Box(8,445-RowID,495,458-RowID), [RS_SmallFontXT], 1, [clBlack, clBlue], 1,10,1,'');
+end;
+
+
+
+////----------------------------------------------------------------------------
+////----------------------------------------------------------------------------
+////----------------------------------------------------------------------------
+
+
+(*   
+ ...
+*)
+function RS_FindChooseOptionMenu(var Pos:TPoint): Boolean;
+begin
+  Result := FindBitmap(pos.x, pos.y, __bmpChooseOption, 0, 0, 764, 502);
+  if Result then
+  begin
+    pos.x := (pos.x - 88);
+    pos.y := (pos.y + 2);
+  end;
+end;
+
+
+(*   
+ ...
+*)
+function RS_ChooseOptionActive: Boolean;
+var x,y:Integer;
+begin
+  Result := FindBitmap(x, y, __bmpChooseOption, 0, 0, 764, 502);
+end;
+
+
+(*   
+ ...
+*)
+function RS_ChooseOptionArea(var Area: TBox): Boolean;
+var
+  tp:Tpoint;
+  bmp: TSCARBitmap;
+begin
+  area := Box(0, 0, 0, 0);
+  Result := RS_FindChooseOptionMenu(tp);
+  if Result then
+  begin
+    bmp := GetClient.Capture;  
+    tp := Point((tp.x - 1), (tp.y + 17));
+    Area := TPABounds(XT_FloodFillMatrixEx(XT_Bmp2Matrix(Bmp, True),TP,False));
+    ExpandBox(Area, 2);
+    area.Y1 := (Area.Y1 - 17);
+    FitBoxIn(Area, GetClient.ImageArea);
+  end;
+end;
+
+
+(*   
+ ...
+*)
+function RS_ChooseOptionItemArea(var Area: TBox): Boolean;
+begin
+  Result := RS_ChooseOptionArea(Area);
+  if Result then
+    area.Y1 := (area.Y1 + 17);
+end;
+
+
+(*   
+ Open the "choose option" box.
+*)
+function RS_OpenChooseOptionEx(Pt:TPoint; StdDev, MaxDev:Integer): Boolean;
+var
+  maxT,i:Integer;
+  Null:TPoint;
+begin
+  Result := False;
+  while not(Result) and (i <= 3) do
+  begin  
+    MMouseClick(Pt, StdDev, MaxDev, mbRight);
+    MaxT := GetTimeRunning + 1000;
+    while (GetTimeRunning < MaxT) do
+    begin
+      if RS_FindChooseOptionMenu(Null) then
+      begin
+        Result := True;
+        Break;
+      end;
+    end;
+    Inc(i);
+  end;
+end;
+
+
+(*   
+ Open the "choose option" box.
+*)
+function RS_OpenChooseOption(Pt:TPoint): Boolean;
+begin
+  Result := RS_OpenChooseOptionEx(Pt, 1, 1);                 
+end;
+
+
+(*   
+ Returns every item in the option list!
+*)
+function RS_GetChooseOptionList: TStrArray;
+var
+  B:TBox;
+  bmp: TSCARBitmap;
+  client: TSCARClient;
+  W,H: Integer;
+  TPA:TPointArray;
+  Str:String;
+begin
+  if RS_ChooseOptionItemArea(B) then 
+  begin
+    if not(FindColorsEx(TPA, [0, 4674653], B.X1, B.Y1, B.X2, B.Y2)) then 
+      Exit; 
+    bmp := TSCARBitmap.Create('');        
+    W := (B.X2 - B.X1 + 1);
+    H := (B.Y2 - B.Y1 + 1);
+    bmp.SetSize(W, H); 
+    OffsetTPA(TPA, -B.X1, -B.Y1);
+    bmp.SetPixels(XT_InvertTPA(TPA), $FFFFFF);
+    client := SetClient(TSCARBitmapClient.Create(bmp));   
+    Str := XT_GetTextDynAt(Box(0,0,W-1,H-1), RS_OptionFontXT, 1,5,1, 0, False, '');
+    SetClient(client).Free;
+    Result := Explode(#13#10, Str);   
+  end;
+end;
+
+
+
+(*   
+ Select the option by the given Text.
+*)
+function RS_ChooseOptionEx(Text:String; var ID:Integer; OpenIt:Boolean): Boolean;
+var
+  B:TBox;
+  i,y1,y2,t: Integer;
+  Options:TStrArray;   
+  pt:TPoint;
+begin
+  if OpenIt then 
+  begin
+    GetMousePos(pt.x, pt.y);
+    RS_OpenChooseOptionEx(Pt, 1, 1);
+  end;
+  Result := False;
+  if RS_ChooseOptionItemArea(B) then 
+  begin
+    Options := RS_GetChooseOptionList;  
+    for i:=0 to High(Options) do
+      if StrContains(Text, Options[i]) then  
+      begin 
+        y1 := (I*15) + B.y1;
+        y2 := y1 + 15;
+        MMouseClickEx(Point(((b.x2 + b.x1) div 2), (y2+y1) div 2), 1,1,15,4, mbLeft);  
+        Result := True;
+        ID := i;
+        t := GetTimeRunning + 2000;
+        while (GetTimeRunning < T) do
+          if Not(RS_ChooseOptionActive) then Break;
+        Exit;
+      end;
+  end;
+end;
+
+
+(*   
+ Select the option by the given Text.
+*)
+function RS_ChooseOption(Text:String): Boolean;
+var id:Integer;
+begin
+  Result := RS_ChooseOptionEx(Text, ID, False);
+end;
+
+
+(*   
+ Select the option by the given Text-Array.
+*)
+function RS_ChooseOptionAnyEx(Text:TStrArray; var ID:Integer; OpenIt:Boolean): Boolean;
+var
+  B:TBox;
+  i,y1,y2,t: Integer;
+  Options:TStrArray;   
+  pt:TPoint;
+begin
+  if OpenIt then 
+  begin
+    GetMousePos(pt.x, pt.y);
+    RS_OpenChooseOptionEx(Pt, 1, 1);
+  end;
+  Result := False;
+  if RS_ChooseOptionItemArea(B) then 
+  begin
+    Options := RS_GetChooseOptionList;  
+    for i:=0 to High(Options) do
+      if StrContainsAny(Text, Options[i]) then  
+      begin 
+        y1 := (I*15) + B.y1;
+        y2 := y1 + 15;
+        MMouseClickEx(Point(((b.x2 + b.x1) div 2), (y2+y1) div 2), 6,2,15,4, mbLeft);  
+        Result := True;
+        ID := i;
+        t := GetTimeRunning + 2000;
+        while (GetTimeRunning < T) do
+          if Not(RS_ChooseOptionActive) then Break;
+        Exit;
+      end;
+  end;
+end;
+
+
+(*   
+ Select the option by the given Text-Array.
+*)
+function RS_ChooseOptionAny(Text:TStrArray): Boolean;
+var id:Integer;
+begin
+  Result := RS_ChooseOptionAnyEx(Text, ID, False);
+end;
+
+
+(*   
+ Select the option by the given id, it will return the text at the option.
+*)
+function RS_ChooseOptionIDEx(ID:Integer; var Text:String): Boolean;
+var
+  B:TBox;
+  y1,y2: Integer;
+  Options:TStrArray;   
+begin
+  Result := False;
+  if RS_ChooseOptionItemArea(B) then 
+  begin
+    Options := RS_GetChooseOptionList;
+    if ID < High(Options) then
+    begin 
+      y1 := (ID*15) + B.y1;
+      y2 := y1 + 15;
+      MMouseClickEx(Point(((b.x2 + b.x1) div 2), (y2+y1) div 2), 6,2,15,4, mbLeft); 
+      Result := True;
+      Text := Options[ID];
+      Exit;
+    end;
+  end;
+end;
+
+
+(*   
+ Select option by ID.
+*)
+function RS_ChooseOptionID(ID:Integer): Boolean;
+var Text:String;
+begin
+  Result := RS_ChooseOptionIDEx(ID, Text);
+end;
+
+
+(*   
+ Check if the given text is found in the option menu
+*)
+function RS_IsChooseOptionText(Text:String): Boolean;
+var
+  i:Integer;
+  B:TBox;   
+  Options:TStrArray;
+begin
+  Result := False;
+  if RS_ChooseOptionItemArea(B) then 
+  begin
+    Options := RS_GetChooseOptionList; 
+    for i:=0 to High(Options) do
+      if StrContains(Text, Options[i]) then  
+      begin
+        Result := True;
+        Exit; 
+      end;
+  end; 
+end;
+
+
+(*   
+ Select the option by the given id.
+*)
+function RS_GetChooseOptionText(ID:Integer): String;
+var
+  B:TBox;
+  Options:TStrArray;
+begin
+  if RS_ChooseOptionItemArea(B) then 
+  begin
+    Options := RS_GetChooseOptionList;
+    if High(Options) <= ID then
+      Result := Options[id]; 
+  end;                  
+end;
+
+
+(*   
+ Close the "choose option" box.
+*)
+function RS_CloseChooseOption: Boolean;
+begin 
+  Result := RS_ChooseOption('Cancel');  
+end;
+
+
+////----------------------------------------------------------------------------
+////----------------------------------------------------------------------------
+////----------------------------------------------------------------------------
+
+(*   
+ ...
+*)
+function RS_ExtractTextBoxes(Area:TBox; Colors:TIntArray; tolerance: Integer): TBoxArray;
+var
+  W,H,I:Integer;
+  TPA: TPointArray;
+  TextClusters: T2DPointArray;
+  B:TBox;
+begin
+  if FindColorsTolEx(TPA, Colors, Area.x1, Area.y1, Area.x2, Area.y2, tolerance) then
+  begin
+    TextClusters := XT_ClusterTPAEx(TPA, 12,1, True);  
+    for i:=0 to High(TextClusters) do
+    begin
+      B := TPABounds(TextClusters[i])
+      W := (B.x2-B.x1) + 1;
+      H := (B.y2-B.y1) + 1;
+      if (W > 6) and (H > 6) then
+      begin
+        SetLength(Result, Length(Result) + 1);
+        Result[High(Result)] := B;
+      end;
+    end;
+  end;
+end; 
+
+
+(*   
+ Look for text on the RS mainscreen.
+*)
+function RS_GetScreenText(Area:TBox; TextColors:TintArray; ColorTol: Integer): TStrArray;
+var
+  i:Integer;
+  Text:String;
+  Boxes:TBoxArray;
+begin
+  Boxes := RS_ExtractTextBoxes(Area, TextColors, ColorTol);
+  if (Length(Boxes) = 0) then Exit;
+  
+  for i:=0 to High(Boxes) do
+  begin
+    Text := XT_GetTextAtEx(Boxes[i], [RS_UpFontXT], 1, TextColors, ColorTol, 8, 1,'');
+    if Length(Text) <> 0 then
+    begin
+      SetLength(Result, Length(Result) + 1);
+      Result[High(Result)] := Text;
+    end;
+  end;
+end;
+
+
+(*   
+ Checks if any of the texts found on the mainscreen matches your text.
+*)
+function RS_IsScreenText(Text:String; Area:TBox; TextColors:TintArray; ColorTol: Integer): Boolean;
+var
+  i:Integer;
+  TSA: TStrArray;
+begin
+  TSA := RS_GetScreenText(Area, TextColors, ColorTol);
+  if (Length(TSA) = 0) then Exit;  
+  Result := True;
+  for i:=0 to High(TSA) do
+    if StrContains(Text, TSA[i]) then Exit;
+  Result := False;
+end;
+
+(*   
+ Checks if any of the texts found on the mainscreen matches any of your texts..
+*)
+function RS_IsScreenTextAny(Text:TStrArray; Area:TBox; TextColors:TintArray; ColorTol: Integer): Boolean;
+var
+  i:Integer;
+  TSA: TStrArray;
+begin
+  TSA := RS_GetScreenText(Area, TextColors, ColorTol);
+  if (Length(TSA) = 0) then Exit;  
+  Result := True;
+  for i:=0 to High(TSA) do
+    if StrContainsAny(Text, TSA[i]) then Exit; 
+  Result := False;
+end;
+
+
+(*   
+ Checks if any of the texts found on the mainscreen matches all of your texts..
+*)
+function RS_IsScreenTextAll(Text:TStrArray; Area:TBox; TextColors:TintArray; ColorTol: Integer): Boolean;
+var
+  i:Integer;
+  TSA: TStrArray;
+begin
+  TSA := RS_GetScreenText(Area, TextColors, ColorTol);
+  if (Length(TSA) = 0) then Exit;
+  Result := True;
+  for i:=0 to High(TSA) do
+    if StrContainsAll(Text, TSA[i]) then Exit;  
+  Result := False;
+end;

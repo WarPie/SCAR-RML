@@ -1,0 +1,15 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+const
+  MATH_PI     = 3.141592653589;
+  MATH_TAU    = MATH_PI * 2;
+  MATH_PIDiv2 = MATH_PI / 2.0; 
+  MATH_PIDiv3 = MATH_PI / 3.0; 
+  MATH_PIDiv4 = MATH_PI / 4.0;
+  MATH_PIDiv6 = MATH_PI / 6.0;
+  MATH_PIDiv12 = MATH_PI / 12.0;
+  MATH_PIDiv36 = MATH_PI / 36.0;

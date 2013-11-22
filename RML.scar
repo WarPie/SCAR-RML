@@ -1,0 +1,76 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+var
+  SelfDir,FontDir,BMPDir:String;
+
+(*
+ ..::: Level 1 :::..                                                              
+ Core rutines that may be needed just about everywhere.                                           
+*)
+{$I SCARExt.scar}
+{$I Src/Math.scar}
+{$I Src/String.scar}
+{$I Src/Box.scar}
+{$I Src/Globals.scar}
+{$I Src/Random.scar}
+{$I Src/Mouse.scar}
+
+
+(*
+ ..::: Level 2 :::..                                                              
+ OCR routines and rutiones that is not superspesific.                                            
+*)
+{$I Src/OCR.scar}
+{$I Src/Chat.scar}
+{$I Src/Animation.scar}
+{$I Src/Object.scar}
+
+
+(*
+ ..::: Level 3 :::..                                                              
+ Purely RS-Related stuff.                                       
+*)
+{$I Src/AntiBan.scar}
+{$I Src/Login.scar}
+{$I Src/Navigation.scar}
+{$I Src/Minimap.scar}
+{$I Src/GameTabs.scar}
+{$I Src/Bank.scar}
+{$I Src/Combat.scar}
+{$I Src/World.scar}
+
+
+procedure SetupRS07;
+var
+  t: Integer;
+begin
+  t := GetTimeRunning; 
+  
+  SelfDir := IncludesPath + '\RML\';
+  FontDir := SelfDir + 'Fonts\';
+  BMPDir  := SelfDir + 'Bmps\';
+  RS_LoadOCR; 
+  RS_LoadLogin;
+  RS_LoadBanking;
+  RS_LoadGameTabs;
+   
+  t := GetTimeRunning - t;
+  WriteLn('[RML Successfully loaded in '+ IntToStr(t) +' ms]');
+end;
+
+
+procedure FreeRS07;
+begin
+  RS_FreeOCR;
+  RS_FreeLogin;
+  RS_FreeBanking;
+  RS_FreeGameTabs;
+  
+  SelfDir := '';
+  FontDir := '';
+  BMPDir  := '';
+end;

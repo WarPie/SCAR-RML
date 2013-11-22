@@ -1,0 +1,225 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+//Related to CameraPitch, CameraAngle stuff..
+const
+  RotateDir_Left  = -1;
+  RotateDir_Right = 1;
+  RotateDir_Nil   = 0;
+  RotateDir_Rand  = 2;
+  RotateDir_Up    = -1;
+  RotateDir_Down  = 1;
+
+
+{*
+ ...
+*}
+procedure RS_RotateCompass(Rotate: Integer);
+begin
+  VKeyUp(VK_LEFT);
+  VKeyUp(VK_RIGHT);
+  if (rotate <> RotateDir_Nil) then
+  case rotate of
+    RotateDir_Left:  VKeyDown(VK_LEFT);
+    RotateDir_Right: VKeyDown(VK_RIGHT);
+    RotateDir_Rand:
+    if RBool then VKeyDown(VK_LEFT)
+    else VKeyDown(VK_RIGHT);
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_GetCompassAngleEx(MMCorrect:Boolean): Extended;
+var
+  A,B,C,M:TPoint;
+  i,j,W,H:Integer;
+  Angle,An,Tmp:Extended;
+  Angles:TExtArray;
+  ATPA:T2DPointArray;
+  TPA:TPointArray;
+begin
+  M := Point(561,21);
+  FindColorSpiralTolEx(M.x,M.y,TPA,920735,542,3,578,38,10);
+  ATPA := XT_ClusterTPA(TPA,3,True);
+  SetLength(TPA, 3);
+  for i:=0 to High(ATPA) do
+    if (Length(ATPA[i]) < 5) and (j<3) then begin 
+      TPA[j] := ATPA[i][High(ATPA[i])];
+      inc(j); 
+    end; 
+  XT_LongestPolyVector(TPA, A,B);
+  TPARemove(TPA,A);
+  TPARemove(TPA,B);
+  C := TPA[0];                         
+  Result := XT_Modulo(Degrees(ArcTan2(-(M.y-C.y),(M.x-C.x)))-90,360)
+  
+  // Fix me
+  if MMCorrect then 
+  begin  
+    Exit;
+    Tmp := XT_Modulo(Degrees(ArcTan2(-(A.y-B.y),(A.x-B.x))),90);
+    SetLength(ATPA, 0);                
+    if FindColorTolEx(TPA, 15656938, 580,14,715,130,15) then
+    begin
+      ATPA := XT_ClusterTPA(TPA,1,False);
+      SetLength(Angles, Length(ATPA)); 
+      j:=0;
+      for i:=0 to High(ATPA) do
+      begin
+        TPADimensions(XT_AlignTPA(ATPA[i], AM_BBox, Angle), W,H);
+        if (Length(ATPA[i]) >= 10) and InRange(H, 1,3) then 
+        begin 
+          An := XT_Modulo(Angle,90);
+          if Abs(XT_DeltaAngle(Tmp,An)) < 10 then begin    
+            Angles[j] := Abs(XT_DeltaAngle(Tmp,An));
+            Inc(j);
+          end;
+        end;
+      end;
+      An := 0;
+      if j > 0 then
+      begin         
+        SetLength(Angles, j);
+        for i:=0 to j-1 do An := An + Angles[i];  
+        An := (An / j);
+        SetLength(Angles, 0);
+      end;
+    end; 
+    Result := XT_Modulo(Result+An,360) 
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_GetCompassAngle: Extended;
+begin
+  Result := RS_GetCompassAngleEx(False);
+end;
+
+
+{*
+ ...
+*}
+function RS_SetCompass(dgrs: Extended): Extended;
+var
+  T,dir:Integer;
+begin
+  dgrs := XT_Mod(dgrs,360);
+  Result := RS_GetCompassAngle;
+  if Abs(XT_DeltaAngle(Dgrs, Result)) <= 1 then Exit;
+  if XT_DeltaAngle(Dgrs, Result) > 0 then
+    dir := RotateDir_Left
+  else
+    dir := RotateDir_Right;
+
+  RS_RotateCompass(dir);
+  T := GetTimeRunning + 8000;
+  while GetTimeRunning < T do
+  begin
+    if Abs(XT_DeltaAngle(Dgrs, RS_GetCompassAngle)) <= 3 then
+      Break;
+  end;     
+  RS_RotateCompass(RotateDir_Nil); 
+end;
+
+
+{*
+ ...
+*}
+function RS_SetCompassDir(direction: string): Extended;
+begin
+  Result := -1;
+  direction := Uppercase(Trim(direction));
+  case direction of 
+   'N': Result := RS_SetCompass(0);
+   'NW':Result := RS_SetCompass(45);
+   'W': Result := RS_SetCompass(90);
+   'SW':Result := RS_SetCompass(135);
+   'S': Result := RS_SetCompass(180);
+   'SE':Result := RS_SetCompass(225);
+   'E': Result := RS_SetCompass(270);
+   'NE':Result := RS_SetCompass(315);
+  end;
+end;
+
+
+/// ---------------------------------------------------------------------
+/// Camera Pitch
+/// ---------------------------------------------------------------------
+
+{*
+ ...
+*}
+procedure RS_RotateCamera(rotate: Integer);
+begin
+  VKeyUp(VK_UP);
+  VKeyUp(VK_DOWN);
+  if (rotate <> RotateDir_Nil) then
+  case rotate of
+    RotateDir_UP:   VKeyDown(VK_UP);
+    RotateDir_Down: VKeyDown(VK_DOWN);
+  end;
+end;
+
+
+{*
+ Sets the camera angle to highrst or lowest pitch..
+ If say, you are in a VERY crowded place, IE: Varrok World 1, it will just
+ hold the key down for 5 sec, as your screen will be constantly animating..
+ So, as long as you are logged in and not lagging like crazy, this works.
+ 
+ @params
+   Pitch takes a string, and uses only the first chars in that string.
+   So you can give it like: 'High', 'H', 'Highest' etc..
+*}
+procedure RS_SetCameraPitch(Pitch:String);
+var
+  T,MinT: Integer;
+begin
+  Pitch := Uppercase(Trim(Pitch));
+  Pitch := Pitch[1];
+  case Pitch of
+  'H': 
+    begin
+      RS_RotateCamera(RotateDir_Up);
+      T := GetTimeRunning + 5000;
+      MinT := GetTimeRunning + 400;
+      while (GetTimeRunning < T) or (GetTimeRunning > MinT) do
+      begin
+        if (RS_GetPixError(Box(395,4,515,335), 100, True) <= 10) and
+           (RS_GetPixError(Box(4,25,15,337), 100, True) <= 10) and
+           (RS_GetPixError(Box(4,325,515,325), 100, True) <= 10) then
+          Break;
+      end; 
+    end;
+  'L': 
+    begin
+      RS_RotateCamera(RotateDir_Down);
+      T := GetTimeRunning + 5000;
+      MinT := GetTimeRunning + 400;
+      while (GetTimeRunning < T) or (GetTimeRunning > MinT) do
+      begin
+        if (RS_GetPixError(Box(395,4,515,335), 100, True) <= 10) and
+           (RS_GetPixError(Box(4,25,15,337), 100, True) <= 10) and
+           (RS_GetPixError(Box(4,325,515,325), 100, True) <= 10) then
+          Break;
+      end; 
+    end;      
+  end;
+  RS_RotateCamera(RotateDir_Nil);
+end;
+
+
+procedure RS_SetCameraAngle(Angle:String);
+begin
+  RS_SetCameraPitch(Angle);
+end;
+
+

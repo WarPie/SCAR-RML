@@ -1,0 +1,121 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky), Jani Lähdesmäki (Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+// Sidenote for Gauss functions that allows "MaxDev"-input, to have the result
+// pretty random MaxDev is usually nice to keep around 4*StdDev (will still have reasonable peaks).
+// MaxDev can also be defined as "Range", and StdDev as Normal Variance.
+
+
+(*
+ Generates a "gaussian" (normally distributed) TPoint using Box-Muller transform.
+*)
+function GaussPt(MeanPt:TPoint; Stddev:Extended): TPoint;
+var Theta,Scale:Extended;
+begin
+  Scale := Stddev * Sqrt(-2 * Ln(Rand));
+  Theta := 2 * PI * Rand;
+  Result.x := Round(MeanPt.x + Scale * Cos(theta));
+  Result.y := Round(MeanPt.y + Scale * Sin(theta));
+end;
+
+
+(*
+ Generates a "gaussian" (normally distributed) TPoint using Box-Muller transform.
+ Takes an extra parameter to keep points within a given range (maxDev) / "Removes peaks".
+*)
+function GaussPtEx(MeanPt:TPoint; StdDev, MaxDev:Extended): TPoint;
+var Theta,Scale:Extended;
+begin
+  if MaxDev < 1 then MaxDev := 1;
+  Scale := Stddev * Sqrt(-2 * Ln(Rand));
+  while Scale > MaxDev do
+    Scale := Stddev * Sqrt(-2 * Ln(Rand));
+  Theta := 2 * PI * Rand;
+  Result.x := Round(MeanPt.x + Scale * Cos(theta));
+  Result.y := Round(MeanPt.y + Scale * Sin(theta));
+end;
+
+
+(*
+ Generates a "gaussian" (normally distributed) TPoint using Box-Muller transform.
+ Result in "Donut"-like shape with a gaussian distribution around the circumsphere.
+*)
+function GaussPtDonut(MeanPt:TPoint; StdDev, MaxDev:Extended; Radius:LongInt): TPoint;
+var PtG, Mid:TPoint;
+begin
+  PtG := GaussPtEx(MeanPt, StdDev, MaxDev);
+  Mid := GaussPtEx(MeanPt, StdDev, MaxDev);
+  Result := XT_ScalePoint(PtG, Mid, Radius);
+end;
+
+
+(*
+ Generates a "gaussian" (normally distributed) TPoint using Box-Muller transform.
+ Takes separate x, and y parameters for Standard deviation.
+*)
+function GaussPtOval(MeanPt:TPoint; StddevX, StdDevY:Extended): TPoint;
+var ScaleX,ScaleY:Extended;
+begin
+  ScaleX := StddevX * Sqrt(-2 * Ln(Rand));
+  ScaleY := StddevY * Sqrt(-2 * Ln(Rand));
+  Result.x := Round(MeanPt.x + ScaleX * Cos(2 * PI * Rand));
+  Result.y := Round(MeanPt.y + ScaleY * Sin(2 * PI * Rand));
+end;
+
+
+(*
+ Generates a "gaussian" (normally distributed) TPoint using Box-Muller transform.
+ Takes separate x, and y parameters for Standard deviation. 
+ Takes two extra parameter to keep points within a given range (maxDevX/Y).
+*)
+function GaussPtOvalEx(MeanPt:TPoint; StddevX, StdDevY, MaxDevX, MaxDevY:Extended): TPoint;
+var ScaleX,ScaleY:Extended;
+begin
+  ScaleX := StddevX * Sqrt(-2 * Ln(Rand));  
+  while ScaleX > MaxDevX do
+    ScaleX := StddevX * Sqrt(-2 * Ln(Rand)); 
+    
+  ScaleY := StddevY * Sqrt(-2 * Ln(Rand));  
+  while ScaleY > MaxDevY do
+    ScaleY := StddevY * Sqrt(-2 * Ln(Rand)); 
+    
+  Result.x := Round(MeanPt.x + ScaleX * Cos(2 * PI * Rand));
+  Result.y := Round(MeanPt.y + ScaleY * Sin(2 * PI * Rand));
+end;
+
+
+(*
+ Simple random waiting.
+*)
+procedure WaitR(MinMS, MaxMS:Integer);
+begin
+  Wait(RandomRange(MinMS, MaxMS));
+end;
+
+
+(*
+ Simple gaussuan random waiting.
+*)
+procedure WaitG(MS, StdDev:Integer);
+begin
+  Case RandomRange(0,2) = 1 of
+    True:  Wait(MS + RandomG(StdDev*4, StdDev));
+    False: Wait(MS - RandomG(StdDev*4, StdDev));
+  end;
+end;
+
+
+(*
+ Simple gaussuan random waiting with MaxDev param.
+*)
+procedure WaitGEx(MS, StdDev, MaxDev:Integer);
+begin
+  Case RandomRange(0,2) = 1 of
+    True:  Wait(MS + RandomG(MaxDev, StdDev));
+    False: Wait(MS - RandomG(MaxDev, StdDev));
+  end;
+end;
+
+
+

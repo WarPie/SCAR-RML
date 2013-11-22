@@ -1,0 +1,78 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+function RS_GetFightBarTPA(Area: TBox): TPointArray;
+var
+  Mid: TPoint;
+  ATPA: T2DPointArray;
+begin
+  SetLength(ATPA, 2);
+  Mid := BoxCenter(Area);
+  FindColorSpiralTolEx(Mid.x, Mid.y, ATPA[0], 255, Area.X1, Area.Y1, Area.X2, Area.Y2, 2);
+  FindColorSpiralTolEx(Mid.x, Mid.y, ATPA[1], 65280, Area.X1, Area.Y1, Area.X2, Area.Y2, 2);
+  Result := MergeATPA(ATPA);
+end;
+
+
+function RS_GetMSFightBars: T2DPointArray;
+begin
+  Result := XT_ClusterTPA(RS_GetFightBarTPA(Box(4,20,414,337)), 1, True);
+end;
+
+
+function RS_InFight: Boolean;
+begin
+  Result := InRange(Length(RS_GetFightBarTPA(Box(220, 110, 280, 170))), 30, 330);
+  if Not(Result) then
+    Result := (CountColorTol(192,   230,140,270,180, 1) > 30) and 
+              (CountColorTol(65899, 230,140,270,180, 1) > 140);
+  if Not(Result) then
+    Result := (CountColorTol(16728128, 230,140,270,180, 1) > 30) and 
+              (CountColorTol(7668995,  230,140,270,180, 1) > 140);
+end;
+
+
+function RS_IsFightAt(var X, Y: Integer): Boolean;
+var FightBox: TBox;
+begin
+  FightBox := Box(Max(MSX1, x-20), Max(MSY1, y-40), Min(MSX2, x+20), Min(MSY2, y+20));
+  Result := Length(RS_GetFightBarTPA(FightBox)) > 5;
+end;
+
+
+function RS_FightIsOver: Boolean;
+var TPA:TPointArray;
+begin
+  Result := True;
+  if not(RS_InFight) then Exit;
+  TPA := RS_GetFightBarTPA(Box(200, 90, 310, 210));
+  Result := (Length(XT_ClusterTPA(TPA, 1,True)) = 1);
+end;
+
+
+function RS_IsPoisoned: Boolean;
+begin
+  Result := (CountColorTol(49152, 233,147,267,179, 59) > 30) and 
+            (CountColorTol(19200, 233,147,267,179, 59) > 150);
+end;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,109 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+{*
+ ...
+*}
+function FitBoxIn(var Area: TBox; Outer: TBox): Boolean;
+var
+  tmp: TBox;
+begin
+  case ((Outer.X1 <= Outer.X2) and (Outer.Y1 <= Outer.Y2)) of
+    True:
+    begin
+      tmp := TBox(Area);
+      if (Area.X1 < Outer.X1) then
+        Area.X1 := Integer(Outer.X1);
+      if (Area.X1 > Outer.X2) then
+        Area.X1 := Integer(Outer.X2);
+      if (Area.Y1 < Outer.Y1) then
+        Area.Y1 := Integer(Outer.Y1);
+      if (Area.Y1 > Outer.Y2) then
+        Area.Y1 := Integer(Outer.Y2);
+      if (Area.X2 > Outer.X2) then
+        Area.X2 := Integer(Outer.X2);
+      if (Area.X2 < Outer.X1) then
+        Area.X2 := Integer(Outer.X1);
+      if (Area.Y2 > Outer.Y2) then
+        Area.Y2 := Integer(Outer.Y2);
+      if (Area.Y2 < Outer.Y1) then
+        Area.Y2 := Integer(Outer.Y1);
+      Result := (area <> tmp);
+    end;
+    False: Result := False;
+  end;
+end;
+
+
+{*
+ ...
+*}
+function PartitionBox(B: TBox; Rows, Cols: Integer): TBoxArray;
+var
+  idx,x,y,BoxW,BoxH: Integer;
+begin
+  SetLength(Result, (Cols+1)*(Rows+1));
+  BoxW := (B.x2 - B.x1 + 1) div Cols;
+  BoxH := (B.y2 - B.y1 + 1) div Rows;
+  for y:=0 to Rows-1 do 
+    for x:=0 to Cols-1 do
+    begin   
+      idx := (Y * Cols) + X;
+      Result[idx].x1 := B.x1 + (BoxW * x);
+      Result[idx].y1 := B.y1 + (BoxH * y);
+      Result[idx].x2 := B.x1 + (BoxW * x) + BoxW-1;
+      Result[idx].y2 := B.y1 + (BoxH * y) + BoxH-1;
+    end;
+end;
+
+
+{*
+ ...
+*}
+function PartitionBoxEx(B: TBox; Rows, Cols: Integer; SizeChange:Integer): TBoxArray;
+var
+  idx,x,y,BoxW,BoxH: Integer;
+begin
+  SetLength(Result, (Cols+1)*(Rows+1));
+  BoxW := (B.x2 - B.x1 + 1) div Cols;
+  BoxH := (B.y2 - B.y1 + 1) div Rows;
+  for y:=0 to Rows-1 do 
+    for x:=0 to Cols-1 do
+    begin   
+      idx := (Y * Cols) + X;
+      Result[idx].x1 := B.x1 + (BoxW * x);
+      Result[idx].y1 := B.y1 + (BoxH * y);
+      Result[idx].x2 := B.x1 + (BoxW * x) + BoxW-1;
+      Result[idx].y2 := B.y1 + (BoxH * y) + BoxH-1;
+      ExpandBox(Result[idx], SizeChange);
+    end;
+end;
+
+
+{*
+ ...
+*}
+function TBABounds(TBA: TBoxArray): TBox;
+var
+  H, I: Integer;
+  B:TBox;
+begin
+  H := High(TBA);
+  if (H < 0) then Exit;
+  Result := TBA[0];
+  for I := 0 to H do
+  begin
+    B := TBA[i];
+    if (Result.X1 > B.X1) then
+      Result.X1 := B.X1;
+    if (Result.Y1 > B.Y1) then
+      Result.Y1 := B.Y1;
+    if (Result.X2 < B.X2) then
+      Result.X2 := B.X2;
+    if (Result.Y2 < B.Y2) then
+      Result.Y2 := B.Y2;
+  end;
+end;

@@ -1,0 +1,580 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+type
+  RS_TBankArea = record 
+    BankName: String;
+    SplitDist: Integer;
+    MinW, MinH, MaxW, MaxH: Integer;
+    MinLen: Integer;
+    CTS: Integer;
+    HueMod, SatMod:Extended;
+    Colors, CheckAngles: TIntArray;
+    Tolerance: Integer;
+    Align: Boolean;                   //if you search for a "box"/color that is wider then it's high, 
+                                      //then you can use `Align` to avoid compass rotation
+    CheckUpText: Boolean;
+  end;
+
+
+var
+  RS_ExitBankPt, RS_ExitDepositPt: TPoint; 
+  
+  //Banks 
+  BANK_VWB: RS_TBankArea; // [Varrock West bank]
+  BANK_VEB: RS_TBankArea; // [Varrock East bank] 
+  BANK_LBB: RS_TBankArea; // [Lumbridge Bank]
+  BANK_FEB: RS_TBankArea; // [Falador East bank]
+  BANK_FWB: RS_TBankArea; // [Falador West bank]
+  BANK_DNB: RS_TBankArea; // [Draynor Bank] 
+  BANK_AKB: RS_TBankArea; // [Al-Kharid Bank]
+  BANK_EVB: RS_TBankArea; // [Edgeville Bank] 
+  BANK_CBB: RS_TBankArea; // [Catherby bank] 
+  BANK_CLB: RS_TBankArea; // [Camelot bank] 
+  BANK_ANB: RS_TBankArea; // [North Ardougne bank]
+  BANK_ASB: RS_TBankArea; // [South Ardougne]
+  BANK_YNB: RS_TBankArea; // [Yanille bank]
+  BANK_GNB: RS_TBankArea; // [North gnome bank]
+  BANK_GSB: RS_TBankArea; // [South gnome bank]
+  BANK_WGB: RS_TBankArea; // [Warrior guild bank]
+  BANK_FGB: RS_TBankArea; // [Fishing guild bank]
+       
+  
+
+(*   
+ Almost all params have to be set.
+*)
+function RS_NewBankFinderEx(Name: String; SplitDist, MinW, MinH, MaxW, MaxH, MinLen, CTS: Integer; 
+                            HueMod, SatMod:Extended; Colors, CheckAngles: TIntArray; Tolerance:Integer): RS_TBankArea;
+begin
+  Result.SplitDist := SplitDist;
+  Result.MinW := MinW; 
+  Result.MinH := MinH; 
+  Result.MaxW := MaxW; 
+  Result.MaxH := MaxH;
+  Result.MinLen := MinLen;
+  Result.CTS := CTS;
+  Result.HueMod := HueMod;
+  Result.SatMod := SatMod;
+  Result.Colors := CopyTIA(Colors);
+  Result.CheckAngles := CopyTIA(CheckAngles);
+  Result.BankName := Name; 
+  Result.Tolerance := Tolerance; 
+  Result.Align := False; 
+  Result.CheckUpText := True;
+end; 
+
+
+(*   
+ Create a new bank object.. Not all parameters can be given (can be set later).
+*)
+function RS_NewBankFinder(Name: String; SplitDist, MinW, MinH, MaxW, MaxH: Integer; Colors: TIntArray; Tolerance:Integer): RS_TBankArea;
+begin
+  Result.SplitDist := SplitDist;
+  Result.MinW := MinW; 
+  Result.MinH := MinH; 
+  Result.MaxW := MaxW; 
+  Result.MaxH := MaxH;
+  Result.MinLen := 100;
+  Result.CTS := 2;
+  Result.HueMod := 0.2;
+  Result.SatMod := 0.2;
+  Result.CheckAngles := [0,90,180,270]; //North is considered default in scripts: So keep it first.
+  Result.Colors := CopyTIA(Colors);
+  Result.BankName := Name;
+  Result.Tolerance := Tolerance;
+  Result.Align := False; 
+  Result.CheckUpText := True;
+end;
+
+
+(*   
+ Used by FreeBanking to free each TBankArea-item
+*)
+procedure RS_FreeBankFinder(var Bank:RS_TBankArea);
+begin
+  Bank.SplitDist := 0;
+  Bank.MinW := 0; 
+  Bank.MinH := 0; 
+  Bank.MaxW := 0; 
+  Bank.MaxH := 0;
+  Bank.MinLen := 0;
+  Bank.CTS := 0;
+  Bank.HueMod := 0;
+  Bank.SatMod := 0;
+  SetLength(Bank.CheckAngles, 0)
+  SetLength(Bank.Colors, 0);
+  Bank.BankName := '';
+  Bank.Tolerance := 0;
+  Bank.Align := False; 
+  Bank.CheckUpText := False;
+end; 
+
+
+(*   
+ Imporant thingy to load.
+*)
+procedure RS_LoadBanking;
+begin
+  RS_ExitBankPt := Point(485,41);
+  RS_ExitDepositPt := Point(431,41); 
+  {Varrock banks}
+  BANK_VWB := RS_NewBankFinder('VWB', 3, 10,10,90,90, [1786961], 35);           //Working
+  BANK_VEB := RS_NewBankFinder('VEB', 3, 10,10,90,90, [6505295,4466483], 20);   //Working
+  BANK_VEB.CTS := 1;
+  {LumBy banks}                                                                     
+  BANK_LBB := RS_NewBankFinder('LBB', 2, 8,8,40,20, [607324,14277085], 30);     //Working
+  BANK_LBB.CheckAngles := [0,180]; 
+  {Falador banks}                                                        
+  BANK_FEB := RS_NewBankFinder('FEB', 2, 10,10,50,50, [3690338,5987170], 25);   //Working
+  BANK_FWB := RS_NewBankFinder('FWB', 3, 10,10,80,80, [4217970,7303288], 20);   //Working
+  {DrayNor banks} 
+  BANK_DNB := RS_NewBankFinder('DNB', 2, 8,8,40,18, [5462367,5463907,5857124], 35); //Working
+  BANK_DNB.Align := True;
+  {Al-Kharid banks}
+  BANK_AKB := RS_NewBankFinder('AKB', 3, 8,8,40,18, [5461593,6777453,3224372], 25);  //Working
+  BANK_AKB.Align := True;                                                            //Note: To much white.. UpText fails... But it's working well
+  BANK_AKB.CheckUpText := False;
+  {EdgeVille banks}  
+  BANK_EVB := RS_NewBankFinder('EVB', 3, 8,8,40,18, [5462367,8028552,5857124], 25); //Working 
+  BANK_EVB.Align := True;
+  {CatherBy banks} 
+  BANK_CBB := RS_NewBankFinder('CBB', 2, 8,8,40,18, [5462367,5463907,5857124], 25); //Working
+  BANK_CBB.Align := True; 
+  {CameLot/Seers banks} 
+  BANK_CLB := RS_NewBankFinder('CLB', 2, 8,8,40,18, [3757669], 30);             //Working
+  BANK_CLB.Align := True;                                                       //Note: To much white.. UpText fails... But it's working well
+  BANK_CLB.CheckUpText := False;                                                
+  {Ardrogune banks}
+  BANK_ANB := RS_NewBankFinder('ANB', 3, 8,8,40,18, [5462367,8028552,5857124], 25); //Working 
+  BANK_ASB.Align := True; 
+  BANK_ASB := RS_NewBankFinder('ASB', 3, 8,8,40,18, [5462367,8028552,5857124], 25); //Working 
+  BANK_ASB.Align := True; 
+  {YaNille banks}
+  BANK_YNB := RS_NewBankFinder('YNB', 3, 8,8,40,18, [5462367,8028552,5857124], 25); //Working 
+  BANK_YNB.Align := True; 
+  
+  //I don't have access to the following banks:  
+  {Gnome Stronghold banks}
+  BANK_GNB := RS_NewBankFinder('NGB', 3, 10,10,90,90, [5462367,4870227], 25);   //Not started 
+  BANK_GSB := RS_NewBankFinder('SGB', 3, 10,10,90,90, [5462367,4870227], 35);   //Not started 
+  {Guild banks}
+  BANK_WGB := RS_NewBankFinder('WGB', 3, 10,10,90,90, [5462367,4870227], 35);   //Not started
+  BANK_FGB := RS_NewBankFinder('FGB', 3, 10,10,90,90, [5462367,4870227], 35);   //Not started        
+end;
+
+
+(*   
+ Free memory!
+*)
+procedure RS_FreeBanking;
+begin  
+  RS_FreeBankFinder(BANK_VWB);
+  RS_FreeBankFinder(BANK_VEB);
+  RS_FreeBankFinder(BANK_LBB);
+  RS_FreeBankFinder(BANK_FEB);
+  RS_FreeBankFinder(BANK_FWB);
+  RS_FreeBankFinder(BANK_DNB);
+  RS_FreeBankFinder(BANK_AKB);
+  RS_FreeBankFinder(BANK_EVB);
+  RS_FreeBankFinder(BANK_CBB);
+  RS_FreeBankFinder(BANK_CLB);
+  RS_FreeBankFinder(BANK_ANB);
+  RS_FreeBankFinder(BANK_ASB);
+  RS_FreeBankFinder(BANK_YNB);
+  RS_FreeBankFinder(BANK_GNB);
+  RS_FreeBankFinder(BANK_GSB);
+  RS_FreeBankFinder(BANK_WGB);
+  RS_FreeBankFinder(BANK_FGB);
+end;
+
+
+(*   
+ Check if the bank is opened.
+*)
+function RS_BankOpen: Boolean;
+begin           
+  Result := XT_IsTextAt('The Bank', Box(180,30,240,50), RS_MainFontXT, 1, 2070783, 1,10,1,'');
+  if not Result then
+    Result := XT_IsTextAt('Rearrange mode',Box(52,288,157,301), RS_SmallFontXT, 1, 2070783, 1,10,1,''); 
+end;
+
+
+(*   
+ Check if the depositbox is opened.
+*)
+function RS_DepositBoxOpen: Boolean;
+begin           
+  Result := XT_IsTextAt('The Bank', Box(140,32,205,50), RS_MainFontXT, 1, 2070783, 1,10,1,'');
+  if not Result then
+    Result := XT_IsTextAt('Deposit Box', Box(300,32,400,50), RS_SmallFontXT, 1, 2070783, 1,10,1,''); 
+end;
+
+
+(*   
+ Close the bank..
+*)
+function RS_CloseBank: Boolean;
+var
+  t,i: Integer;
+begin
+  Result := not(RS_BankOpen);
+  if not(Result) then
+  begin
+    for i:=0 to 4 do //Retry five times (missclicks, and lagg)
+    begin 
+      if not(Result) then
+      begin
+        if i<4 then
+        begin  
+          MMouseClick(RS_ExitBankPt, 4,22, mbLeft); //Can missclick (I want it to)!
+          t := GetTimeRunning + 800;
+        end else begin 
+          MMouseClick(RS_ExitBankPt, 3,6, mbLeft); //No missclick (last try)
+          t := GetTimeRunning + 3000; //Antilagg.. 
+        end;
+        while GetTimeRunning < t do
+        begin
+          Result := not(RS_BankOpen);
+          if Result then Break;
+        end;
+      end;
+    end;
+  end;
+end;
+
+
+(*   
+ Close the depositbox..
+*)
+function RS_CloseDepositBox: Boolean;
+var
+  t,i: Integer;
+begin
+  Result := not(RS_DepositBoxOpen);
+  if not(Result) then
+  begin
+    for i:=0 to 4 do //Retry five times (missclicks, and lagg)
+    begin 
+      if not(Result) then
+      begin
+        if i<4 then
+        begin  
+          MMouseClick(RS_ExitDepositPt, 5,20, mbLeft); //Can missclick (I want it to)!
+          t := GetTimeRunning + 800;
+        end else begin 
+          MMouseClick(RS_ExitDepositPt, 3,8, mbLeft); //No missclick (last try)
+          t := GetTimeRunning + 3000; //Antilagg.. 
+        end;
+        while GetTimeRunning < t do
+        begin
+          Result := not(RS_DepositBoxOpen);
+          if Result then Break;
+        end;
+      end;
+    end;
+  end;
+end;
+
+
+(*   
+ Open bank at the given tpoint (You choose if you want to check uptext as well).
+*)
+function RS_OpenBankAtEx(Pt:TPoint; CheckUpText:Boolean): Boolean;
+var 
+  t:Integer;
+  isFound: Boolean;
+begin
+  MoveMouse(Pt.x, Pt.y);
+  WaitG(110, 30);   
+  if CheckUpText then
+    if not(RS_IsUpTextAny(['Banker', 'Bank', 'anker', 'ank', 'booth', 'ooth'])) then Exit;
+  if RS_IsUpTextAny(['Bank Bank booth', 'Bank booth']) then
+  begin
+    MouseClick2(Pt, mbLeft);
+    IsFound := True;
+  end else
+  begin
+    if RS_OpenChooseOption(Pt) then
+    begin
+      IsFound := RS_ChooseOptionAny(['Bank booth', 'Bank Banker']);
+      if Not(IsFound) then
+        RS_ChooseOption('Cancel');
+    end;
+  end;
+  if IsFound then
+  begin  
+    t := GetTimeRunning + 5000; //Could also check for MMFlag (allow longer runs)
+    Result := False;
+    while not(Result) and (GetTimeRunning < t) do
+    begin 
+      Result := RS_BankOpen;
+      if not(Result) then Result := RS_DepositBoxOpen; 
+      Wait(1);
+    end;
+  end; 
+end;
+
+
+(*   
+ Open bank at the given tpoint (it checks uptext).
+*)
+function RS_OpenBankAt(Pt:TPoint): Boolean;
+begin
+  Result := RS_OpenBankAtEx(Pt, True);
+end;
+
+
+(*  
+ Open bank at any given position.. Should work well.
+*)
+function RS_OpenBank(Bank: RS_TBankArea): Boolean;
+var
+  i,j,HighAngles:Integer;
+  ATPA:T2DPointArray;
+  TPA:TPointArray;
+  Pt: TPoint; 
+  //Storage
+  CTS:Integer;
+  clModA, clModB: Extended;
+  Compass: Extended;
+begin
+  Result := False;
+  //Store old setting:
+  Compass := RS_GetCompassAngle;
+  CTS := GetColorToleranceSpeed;
+  GetColorspeed2Modifiers(ClModA, ClModB);
+
+  //Set to new settings
+  ColorToleranceSpeed(Bank.CTS);
+  SetColorspeed2Modifiers(Bank.HueMod, Bank.SatMod);
+  HighAngles := High(Bank.CheckAngles);
+  //Scan
+  for i:=0 to HighAngles+1 do
+  begin
+    FindColorsTolEx(TPA, Bank.Colors, MSX1,MSY1,MSX2,MSY2, Bank.Tolerance);
+    XT_SortTPAFrom(TPA, Point(MSCX, MSCY)); 
+    ATPA := XT_ClusterTPA(TPA, Bank.SplitDist, True);
+    XT_ATPAFilter(ATPA, Bank.MinLen, Bank.MinW, Bank.MinH, Bank.MaxW, Bank.MaxH, Bank.Align);
+    for j:=0 to High(ATPA) do
+    begin
+      Pt := XT_TPACenter(ATPA[j], CM_Mean, False); 
+      if RS_OpenBankAtEx(GaussPt(Pt, 4), Bank.CheckUpText) then 
+      begin
+        Result := True;  
+        Break;
+      end; 
+    end;
+    if Result then Break;
+    //Only rotate if needed!
+    if not(Result) and (i <= HighAngles) then
+      RS_SetCompass(Bank.CheckAngles[i]);
+  end;
+  
+  //Configure back to old setting:
+  ColorToleranceSpeed(CTS);
+  SetColorspeed2Modifiers(clModA, clModB);
+  RS_SetCompass(Compass);
+end;
+  
+
+(*   
+ Press the search-thingy if it's not toggled..
+*)
+function RS_BankEnableSearch: Boolean;
+var
+  T:Integer;
+  TPA:TPointArray;
+  SearchActive: Boolean;
+begin
+  SearchActive := FindColorTolEx(TPA, 1711221, 380,280,415,320,60);
+  if not(SearchActive) or (Length(TPA) < 500) then
+  begin
+    MMouseClick(Point(400,300), 5,18, mbLeft);
+    T := GetTimeRunning + 4000;
+    while GetTimeRunning < T do
+    begin 
+      SearchActive := FindColorTolEx(TPA, 1711221, 380,280,415,320,60);
+      if (SearchActive) and (Length(TPA) > 500) then
+        Break; 
+    end;
+  end;
+  Result := (SearchActive) and (Length(TPA) > 500);
+end;
+
+
+(*   
+ Remove search-thingy if it's toggled..
+*)
+function RS_BankDisableSearch: Boolean;
+var
+  T:Integer;
+  TPA:TPointArray;
+  SearchInActive: Boolean;
+begin
+  SearchInActive := FindColorTolEx(TPA, 4803917, 380,280,415,320,60);
+  if not(SearchInActive) or (Length(TPA) < 500) then
+  begin
+    MMouseClick(Point(400,300), 5,18, mbLeft);
+    T := GetTimeRunning + 4000;
+    while GetTimeRunning < T do
+    begin 
+      SearchInActive := FindColorTolEx(TPA, 4803917, 380,280,415,320,60);
+      if (SearchInActive) and (Length(TPA) > 500) then
+        Break; 
+    end;
+  end;
+  Result := (SearchInActive) and (Length(TPA) > 500);
+  if Not(Result) then
+    Result := XT_IsTextAt('Show items',Box(60,385,210,410), RS_MainFontXT, 1, clBlack, 1,10,1,'');
+end;
+
+
+(*   
+ Withdraw as note.
+*)
+function RS_BankToggleNote: Boolean;
+var
+  T:Integer;
+  TPA:TPointArray;
+  Toggled: Boolean;
+begin
+  Toggled := FindColorTolEx(TPA, 1777019, 290,305,370,320, 60);
+  if not(Toggled) or (Length(TPA) < 500) then
+  begin                          
+    MMouseClickEx(Point(240,315),5,2,10,4,mbLeft)
+    T := GetTimeRunning + 4000;
+    while GetTimeRunning < T do
+    begin 
+      Toggled := FindColorTolEx(TPA, 1777019, 290,305,370,320, 60);
+      if (Toggled) and (Length(TPA) > 500) then
+        Break; 
+    end;
+  end;
+  Result := (Toggled) and (Length(TPA) > 500);
+end;
+
+
+
+(*   
+ Withdraw as items.
+*)
+function RS_BankToggleItem: Boolean;
+var
+  T:Integer;
+  TPA:TPointArray;
+  Toggled: Boolean;
+begin
+  Toggled := FindColorTolEx(TPA, 1777019, 205,305,285,320, 60);
+  if not(Toggled) or (Length(TPA) < 500) then
+  begin                          
+    MMouseClickEx(Point(240,315),5,2,10,4,mbLeft)
+    T := GetTimeRunning + 4000;
+    while GetTimeRunning < T do
+    begin 
+      Toggled := FindColorTolEx(TPA, 1777019, 205,305,285,320, 60);
+      if (Toggled) and (Length(TPA) > 500) then
+        Break; 
+    end;
+  end;
+  Result := (Toggled) and (Length(TPA) > 500);
+end;
+
+
+(*   
+ Uses the searchbox to look for the given ItemName.
+ Result is the amount of items matching that name.
+*)
+function RS_BankSearchFor(ItemName:String): Integer;
+var
+  T:Integer;
+  TPA:TPointArray;
+  SearchActive: Boolean;
+begin
+  Result := 0;
+  if not(RS_BankOpen) then Exit; 
+  SearchActive := RS_BankEnableSearch;
+  if SearchActive then
+  begin 
+    MMouseClickEx(Point(260,428), 50,7,150,30,mbLeft);  
+    //Check if the field is already filled in:
+    if FindColorEx(TPA, 8388608, 190,420,315,450) then
+      if Length(XT_ClusterTPA(TPA, 1, True)) > 1 then
+      begin
+        T := GetTimeRunning + 15000;
+        while (GetTimeRunning < T) do 
+        begin
+          PressVKey(VK_BACK);
+          WaitG(60,10);
+          FindColorEx(TPA, 8388608, 50,420,485,450);
+          if Length(XT_ClusterTPA(TPA, 1, True)) <= 1 then
+            Break;
+        end;
+      end;
+    TypeText(ItemName); 
+    T := GetTimeRunning + 3000;
+    while (GetTimeRunning < T) do 
+      if XT_IsTextAt(Lowercase(ItemName), Box(283,34,470,50), RS_MainFontXT, 1, clRed, 1,10,1,'') then
+        Break;
+    
+    if FindColorEx(TPA, 65536, BNK_CONTX1,BNK_CONTY1,BNK_CONTX2,BNK_CONTY2) then
+      Result := Length(XT_ClusterTPA(TPA, 4, True));
+  end; 
+end;
+
+
+(*   
+ Insert item from you inverntory to bank.
+*)
+function RS_BankDepositItem(ID:Integer; All: Boolean): Boolean;
+begin
+  Result := False;
+  if not(RS_BankOpen) then Exit; 
+end;
+
+
+(*   
+ Insert X items from inventory to bank... (as seen in RS)...
+*)
+function RS_BankDepositItemX(ID:Integer; Amount:Integer): Boolean;
+begin
+  Result := False;
+  if not(RS_BankOpen) then Exit; 
+end;
+
+
+(*   
+ Insert items from you inverntory to bank.
+*)
+function RS_BankDepositAllEx(IDs:TIntArray; All: Boolean; Exclude:TIntArray): Boolean;
+begin
+  Result := False;
+  if not(RS_BankOpen) then Exit;  
+end;
+
+
+(*   
+ Insert items from you inverntory to bank.
+*)
+function RS_BankDepositAll: Boolean;
+begin
+  Result := False;
+  if not(RS_BankOpen) then Exit; 
+end;
+
+
+(*   
+ Insert items from you inverntory to bank.
+*)
+function RS_BankDepositItems(IDs:TIntArray; All: Boolean): Boolean;
+begin
+  Result := False;
+  if not(RS_BankOpen) then Exit; 
+end;
+
+
+
+

@@ -1,0 +1,158 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+const
+  RS_Skill_Attack    = 0;      RS_Skill_Att = 0;
+  RS_Skill_HitPoints = 1;      RS_Skill_HP = 1;
+  RS_Skill_Mining    = 2;       
+  RS_Skill_Strength  = 3;      RS_Skill_Str = 3;
+  RS_Skill_Agility   = 4;      
+  RS_Skill_Smithing  = 5;     
+  RS_Skill_Defence   = 6;      RS_Skill_Def = 6;
+  RS_Skill_Herblore  = 7;      RS_Skill_Herb = 7;
+  RS_Skill_Fishing   = 8;
+  RS_Skill_Range     = 9;
+  RS_Skill_Theaving  = 10; 
+  RS_Skill_Cooking   = 11;
+  RS_Skill_Prayer    = 12;
+  RS_Skill_Crafting  = 13;
+  RS_Skill_Firemaking = 14;    RS_Skill_FM = 14;
+  RS_Skill_Magic     = 15;
+  RS_Skill_Fletching = 16;     RS_Skill_Fletch = 16;
+  RS_Skill_WoodCutting = 17;   RS_Skill_WC = 17;
+  RS_Skill_RuneCrafting = 18;  RS_Skill_RC = 18;
+  RS_Skill_Slayer    = 19;
+  RS_Skill_Farming   = 20;
+  RS_Skill_Construction = 21;
+  RS_Skill_Hunter    = 1;
+  
+
+
+function __IDToSkillBox(ID:Integer): TBox;
+var row,col:Integer;
+begin
+  row := ID div 3;
+  col := ID mod 3;  
+  Result.x1 := 547 + (Col * 63);
+  Result.y1 := 207 + (Row * 31);
+  Result.x2 := Result.x1 + 64;
+  Result.y2 := Result.y1 + 31; 
+end;
+
+
+{*
+ ...
+*}
+function RS_GetSkillArray: TStrArray;
+var 
+  i,h,k,l:Integer;
+  str:String;
+  LEVELS,REMAIN,Rows:TStrArray;
+begin
+  if RS_OpenTab(RS_Tab_Stats) then
+  begin
+    Str := XT_GetTextAt(Box(534,209,740,458), RS_StatFontXT, 1, clYellow, 1,10,1,''); 
+    Rows := Explode(#13#10, Str); 
+    if High(Rows) < 0 then Exit; 
+    H := High(Rows) div 2;
+    SetLength(Result, 24);
+    for i:=0 to H do 
+    begin
+      L := (i * 3);  
+      REMAIN := Explode(' ', Rows[i+i]);
+      LEVELS := Explode(' ', Rows[i+i+1]);
+      for k:=0 to High(Remain)  do
+        Result[L+k] := LEVELS[k] +'/'+ REMAIN[k];
+    end;
+    SetLength(Result, 23);
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_GetSkillLevel(ID: Integer): Integer;
+var 
+  TSA: TStrArray; 
+  Skill:string;
+  area: TBox;
+begin
+  if RS_OpenTab(RS_Tab_Stats) then
+  begin
+    Area := __IDToSkillBox(ID);
+    Skill := XT_GetTextAt(Area, RS_StatFontXT, 1, clYellow, 1,10,1,'');
+    if (ID < 23) and (Length(Skill)>=1) then 
+    begin
+      TSA := Explode(#13#10, Skill);
+      Result := StrToInt(TSA[0]);
+    end;
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_GetSkillRemains(ID: Integer): Integer;
+var 
+  TSA: TStrArray; 
+  Skill:string;
+  area: TBox;
+begin
+  if RS_OpenTab(RS_Tab_Stats) then
+  begin
+    Area := __IDToSkillBox(ID);
+    Skill := XT_GetTextAt(Area, RS_StatFontXT, 1, clYellow, 1,10,1,'');
+    if (ID < 23) and (Length(Skill)>=1) then 
+    begin
+      TSA := Explode(#13#10, Skill);
+      Result := StrToInt(TSA[1]);
+    end;
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_GetSkillData(ID: Integer; var Level, Remains: Integer): Boolean;
+var 
+  TSA: TStrArray; 
+  Skill:string;
+  area: TBox;
+begin
+  if RS_OpenTab(RS_Tab_Stats) then
+  begin
+    Area := __IDToSkillBox(ID);
+    Skill := XT_GetTextAt(Area, RS_StatFontXT, 1, clYellow, 1,10,1,'');
+    if (ID < 23) and (Length(Skill)>=1) then 
+    begin
+      TSA := Explode(#13#10, Skill);
+      Level := StrToInt(TSA[0]); 
+      Remains := StrToInt(TSA[1]);
+      Result := True;
+    end;  
+  end;
+end;
+
+
+{*
+ ...
+*}
+procedure RS_HoverSkill(ID: Integer);
+var
+  area: TBox;
+begin
+  if RS_OpenTab(RS_Tab_Stats) then
+  begin
+    Area := __IDToSkillBox(ID);
+    MMouseCircle(BoxCenter(Area), 6);
+  end;
+end;
+
+
+

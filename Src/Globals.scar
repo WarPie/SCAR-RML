@@ -1,0 +1,99 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky), Jani Lähdesmäki (Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+
+(* Colors *)
+const 
+ cl_Unknown = $FFFFFF;
+ cl_White = $FFFFFF;
+ cl_Black = $000000;
+ cl_Gray  = $7F7F7F;
+ cl_Red   = $0000FF;
+ cl_Blue  = $FF0000;
+ cl_Green = $00FF00;
+
+ cl_Brown  = $13458B;
+ cl_Cyan   = $FFFF00;
+ cl_Purple = $FF00FF;
+ cl_Yellow = $00FFFF;
+ cl_Orange = $00A5FF;
+ cl_Pink   = $9314FF;
+ 
+ //Other
+ cl_DarkOrange = $007FFF;
+ cl_DarkGreen  = $007F00;
+ cl_DarkBlue   = $7F0000;
+ cl_DarkRed    = $00007F;
+ cl_LiteBlue   = $FF0700;
+ cl_SkyBlue    = $EBCE87;
+ cl_SteelBlue  = $B48246;
+ cl_Maroon     = $000080;
+ cl_Silver     = $C0C0C0;
+       
+ 
+(* coordinates *)
+const
+  //RS07 Client
+  RSX1 = 0;            
+  RSY1 = 0;                          
+  RSX2 = 764;                   
+  RSY2 = 502;
+
+  //Main Screen
+  MSX1 = 4;
+  MSY1 = 4;
+  MSX2 = 515; 
+  MSY2 = 337;
+  MSCX = 260; //center;
+  MSCY = 170;
+  
+  //Chat Screen 
+  CSX1 = 7;
+  CSY1 = 345; 
+  CSX2 = 512; 
+  CSY2 = 473;
+  
+  //Minimap            
+  MMX1  = 570;  
+  MMY1  = 9;                     
+  MMX2  = 714; 
+  MMY2  = 159; 
+  MMCX  = 643; //center; 
+  MMCY  = 83;
+  
+  //Inventory and Menu.
+  INVX1 = 550;
+  INVY1 = 208;
+  INVX2 = 730;
+  INVY2 = 458;
+  
+  //Bank screen
+  BNKX1 = 17;
+  BNKY1 = 24;
+  BNKX2 = 503;
+  BNKY2 = 327;
+  
+  BNK_CONTX1 = 62; //Bank content
+  BNK_CONTY1 = 59;
+  BNK_CONTX2 = 460;
+  BNK_CONTY2 = 285; 
+  
+  BNK_DEPX1 = 86; //Bank deposit
+  BNK_DEPY1 = 25;
+  BNK_DEPX2 = 449;
+  BNK_DEPY2 = 269;
+                                     
+  
+ 
+(*
+ Wait for the key to be pressed.
+ Not very stable, as GetKeyState is not working correctly.
+*)
+procedure WaitKey(key: Char);
+begin
+  Key := CharToVKey(key);
+  while GetKeyState(Key) = False do 
+    Wait(1);
+end;

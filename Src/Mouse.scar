@@ -1,0 +1,63 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+procedure MMouseOvalEx(Pt:TPoint; StdDevX, StdDevY, MaxDevX,MaxDevY:Integer);
+begin
+  Pt := GaussPtOvalEx(pt, StdDevX, StdDevY, MaxDevX, MaxDevY);
+  MoveMouse(pt.x,pt.y);
+end; 
+
+procedure MMouseOval(Pt:TPoint; StdDevX, StdDevY:Integer);
+begin
+  Pt := GaussPtOvalEx(pt, StdDevX, StdDevY, StdDevX*4, StdDevY*4);
+  MoveMouse(pt.x,pt.y);
+end; 
+
+
+procedure MMouseCircleEx(Pt:TPoint; StdDev,MaxDev:Integer);
+begin
+  Pt := GaussPtEx(pt, StdDev, MaxDev);
+  MoveMouse(pt.x,pt.y);
+end; 
+
+
+procedure MMouseCircle(Pt:TPoint; StdDev: Integer);
+begin
+  Pt := GaussPtEx(pt, StdDev, StdDev*4);
+  MoveMouse(pt.x,pt.y);
+end; 
+
+
+procedure MouseClick2(Pt:TPoint; Button:TMouseButton);
+begin
+  WaitG(120, 25);
+  ClickMouse(pt.x,pt.y, Button);   
+  WaitG(70, 15); 
+end;
+
+
+procedure MMouseClickEx(Pt:TPoint; StdDevX, StdDevY, MaxDevX,MaxDevY:Integer; Button:TMouseButton);
+begin
+  MMouseOvalEx(Pt, StdDevX, StdDevY, MaxDevX,MaxDevY);
+  WaitG(120, 25);
+  GetMousePos(pt.x,pt.y);
+  ClickMouse(pt.x,pt.y, Button);   
+  WaitG(70, 15); 
+end;
+
+
+procedure MMouseClick(Pt:TPoint; StdDev, MaxDev:Integer; Button:TMouseButton);
+begin
+  MMouseCircleEx(Pt, StdDev, MaxDev);
+  WaitG(120, 25);
+  GetMousePos(pt.x,pt.y);
+  ClickMouse(pt.x,pt.y, Button);  
+  WaitG(70, 15); 
+end;      
+
+
+
+

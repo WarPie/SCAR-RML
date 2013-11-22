@@ -1,0 +1,69 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+var 
+  RS_MMFlag: TSCARBitmap;
+  RS_MMPoly, RS_MMTPA: TPointArray;
+
+{*
+ ...
+*}
+procedure RS_LoadMinimap;
+begin
+  RS_MMFlag := TSCARBitmap.Create('deNpjZOBn+M+ABR0LY8GKAHTGEAo='); 
+  RS_MMPoly := [Point(642,157),Point(651,155),Point(659,147),Point(666,137),Point(689,122),Point(701,114),Point(709,99), 
+                Point(713,70), Point(708,47), Point(690,25), Point(665,11), Point(648,8),  Point(637,8),  Point(616,12), 
+                Point(594,26), Point(580,41), Point(571,64), Point(570,77), Point(572,93), Point(576,104),Point(585,116),
+                Point(605,128),Point(619,138),Point(623,143),Point(625,148),Point(631,154)];
+  RS_MMTPA := XT_FloodFillPolygon(RS_MMPoly, False);
+end;
+
+
+{*
+ ...
+*}
+procedure RS_FreeMinimap;
+begin
+  RS_MMFlag.Free;
+  SetLength(RS_MMPoly, 0);
+  SetLength(RS_MMTPA, 0);
+end;
+
+
+{*
+ Tries to find the minimap flag using a bitmap of the stem.
+ Result is the bottom of the minimap.
+*}
+function RS_FFlag(var Pt:TPoint): Boolean;
+begin
+  Result := FindBitmapTol(Pt.x,Pt.y, RS_MMFlag, MMX1, MMY1, MMX2, MMY2, 1);
+  if Result then
+    Pt.Y := Pt.Y + 14; 
+end;
+
+
+{*
+ Check if the flag on the minimap exists.
+*}
+function RS_FlagExist: Boolean;
+var x,y: Integer;
+begin
+  Result := FindBitmapTol(x,y, RS_MMFlag, MMX1, MMY1, MMX2, MMY2, 1); 
+end;
+
+
+{*
+ Check if a point is on the minimap.
+ Shaves of some time by checking if the points even is within
+ the bounds of the minimap.
+*}
+function RS_PointOnMinimap(Pt:TPoint): Boolean;
+begin
+  if InRange(pt.x, MMx1, MMx2) and InRange(pt.y, MMy1,MMy2) then
+    Result := XT_InPolyW(Pt.x, Pt.y, RS_MMPoly);
+end;
+
+
+
