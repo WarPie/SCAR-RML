@@ -230,7 +230,7 @@ end;
 function RS_DropPatternGaussEx(Scale: Integer): Integer;
 var GaussTable:TIntArray;
 begin
-  GaussTable := XT_LogscaleTIA([0,1,2,3,4,5], Scale);
+  GaussTable := XT_LogscaleTIA([5,4,3,2,1,0], Scale);
   Result := GaussTable[RandomRange(0, High(GaussTable))];
 end;
 
@@ -241,7 +241,7 @@ end;
 function RS_DropPatternGauss: Integer;
 var GaussTable:TIntArray;
 begin
-  GaussTable := XT_LogscaleTIA([0,1,2,3,4,5], 5);
+  GaussTable := XT_LogscaleTIA([5,4,3,2,1,0], 5);
   Result := GaussTable[RandomRange(0, High(GaussTable))];
 end;
 
