@@ -25,6 +25,7 @@
  function RS_BankDisableSearch: Boolean;  
  function RS_BankToggleNote: Boolean;
  function RS_BankToggleItem: Boolean;
+ function RS_BankSearchFor(ItemName:String): Integer; 
  function RS_MouseToBankSlot(SlotID:Integer): Boolean; 
  >> Deposit:
  function RS_BankDepositItem(SlotID:Integer; All: Boolean): Boolean;
