@@ -33,9 +33,12 @@ end;
 
 procedure MouseClick2(Pt:TPoint; Button:TMouseButton);
 begin
-  WaitG(120, 25);
-  ClickMouse(pt.x,pt.y, Button);   
-  WaitG(70, 15); 
+  WaitG(100, 25);
+  MouseBtnDown(pt.x,pt.y, Button);
+  WaitG(30, 10);
+  GetMousePos(pt.x,pt.y);
+  MouseBtnUp(pt.x,pt.y, Button); 
+  WaitG(40, 15); 
 end;
 
 
@@ -44,8 +47,7 @@ begin
   MMouseOvalEx(Pt, StdDevX, StdDevY, MaxDevX,MaxDevY);
   WaitG(120, 25);
   GetMousePos(pt.x,pt.y);
-  ClickMouse(pt.x,pt.y, Button);   
-  WaitG(70, 15); 
+  MouseClick2(pt, Button);
 end;
 
 
@@ -54,9 +56,21 @@ begin
   MMouseCircleEx(Pt, StdDev, MaxDev);
   WaitG(120, 25);
   GetMousePos(pt.x,pt.y);
-  ClickMouse(pt.x,pt.y, Button);  
-  WaitG(70, 15); 
-end;      
+  MouseClick2(pt, Button);
+end;   
+
+
+procedure DragMouseTo(FromPos:TPoint; ToPos:TPoint; Button:TMouseButton);
+var x,y:Integer;
+begin
+  MoveMouse(FromPos.x, FromPos.y);
+  GetMousePos(x,y);
+  MouseBtnDown(x,y, Button);
+  MoveMouseEx(ToPos.x, ToPos.y, 8);
+  GetMousePos(x,y);
+  MouseBtnUp(x, y, Button);
+end; 
+   
 
 
 

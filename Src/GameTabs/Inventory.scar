@@ -16,7 +16,7 @@
  function RS_InvIsFull: Boolean;  
  function RS_InvIsEmpty: Boolean; 
  function RS_InvSlotCenter(SlotID:Integer): TPoint;  
- function RS_MouseToInvSlot(SlotID:Integer): TPoint;
+ function RS_MMouseToInvSlot(SlotID:Integer): TPoint;
  function RS_DropPattern(PatternID: Integer): TIntArray; 
  function RS_DropPatternErrorize(Pattern:TIntArray; Errors:Integer): TIntArray;
  function RS_DropPatternGaussEx(Scale: Integer): Integer;
@@ -172,7 +172,7 @@ end;
  Moves the mouse to the given inventory slot.
  It moves to a point around the center, using gaussian distribution.
 *}
-function RS_MouseToInvSlot(SlotID:Integer): TPoint;
+function RS_MMouseToInvSlot(SlotID:Integer): TPoint;
 var
   TBA: TBoxArray;
 begin
@@ -259,7 +259,7 @@ begin
     Result := True;
     Exit;
   end; 
-  if RS_OpenChooseOption(RS_MouseToInvSlot(SlotID)) then
+  if RS_OpenChooseOption(RS_MMouseToInvSlot(SlotID)) then
   begin
     Result := RS_ChooseOptionAny(['Drop', 'rop']); 
     if not(Result) then RS_CloseChooseOption;

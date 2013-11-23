@@ -4,6 +4,39 @@
  All rights reserved. Copying must include this header.
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
 
+{=| Functions |=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ >> Banking scrolling:
+ function __GetBankScrollBarPoint: TPoint; 
+ function __GetBankScrollBarPos: Extended;
+ function RS_GetBankRow: Integer;    
+ function RS_GetBankRowEx: Extended;    
+ function RS_BankScrollToRow(Row:Integer): Boolean;  
+ function RS_BankMakeIndexVisible(SlotID: Integer): Integer; 
+ >> Banking:
+ function RS_BankOpen: Boolean;    
+ function RS_DepositBoxOpen: Boolean;
+ function RS_CloseBank: Boolean;   
+ function RS_CloseDepositBox: Boolean; 
+ function RS_OpenBankAtEx(Pt:TPoint; CheckUpText:Boolean): Boolean;   
+ function RS_OpenBankAt(Pt:TPoint): Boolean;  
+ function RS_OpenBank(Bank: RS_TBankArea): Boolean;
+ >> Bank features:
+ function RS_BankEnableSearch: Boolean;
+ function RS_BankDisableSearch: Boolean;  
+ function RS_BankToggleNote: Boolean;
+ function RS_BankToggleItem: Boolean;
+ function RS_MouseToBankSlot(SlotID:Integer): Boolean; 
+ >> Deposit:
+ function RS_BankDepositItem(SlotID:Integer; All: Boolean): Boolean;
+ function RS_BankDepositItemX(SlotID:Integer; Amount:Integer): Boolean;  
+ function RS_BankDepositItems(SlotIDs:TIntArray; All: Boolean): Boolean; 
+ function RS_BankDepositItemsX(SlotIDs:TIntArray; Amount:Integer): Boolean; 
+ function RS_BankDepositAllEx(All:Boolean; Exclude:TIntArray): Integer; 
+ function RS_BankDepositAll: Integer; 
+ >> Withdraw:
+ function RS_WithdrawItem(SlotID, Amount:Integer): Boolean;
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
 type
   RS_TBankArea = record 
     BankName: String;
@@ -20,9 +53,21 @@ type
   end;
 
 
+const 
+  BANK_SCROLL_EPSILON = 0.15;
+  BANK_SCROLL_MUL = 3.71;
+  BANK_SCROLL_DIV = 0.02133;
+  BANK_TOTAL_SLOTS = 423;
+  BANK_COLS = 8; 
+  BANK_ROWS = 5;
+  BANK_SCROLL_ROWS = 47;
+  
+
 var
   RS_ExitBankPt, RS_ExitDepositPt: TPoint; 
-  
+  RS_BankBounds:TBox;
+  RS_BankSlotBounds: TBoxArray;
+   
   //Banks 
   BANK_VWB: RS_TBankArea; // [Varrock West bank]
   BANK_VEB: RS_TBankArea; // [Varrock East bank] 
@@ -119,6 +164,9 @@ end;
 *)
 procedure RS_LoadBanking;
 begin
+  RS_BankBounds := Box(66,59,449,275);
+  RS_BankSlotBounds := PartitionBoxEx(RS_BankBounds, 6, 8, -6);
+
   RS_ExitBankPt := Point(485,41);
   RS_ExitDepositPt := Point(431,41); 
   {Varrock banks}
@@ -189,8 +237,135 @@ begin
   RS_FreeBankFinder(BANK_GSB);
   RS_FreeBankFinder(BANK_WGB);
   RS_FreeBankFinder(BANK_FGB);
+  SetLength(RS_BankSlotBounds, 0);
 end;
 
+
+
+//---|| Bank scrolling ||-----------------\\
+
+{*
+ Return the center position of the scrollbar as TPoint.
+*}
+function __GetBankScrollBarPoint: TPoint;
+var
+  TPA: TPointArray;
+begin
+  if FindColorTolEx(TPA, 4085089, 484,76,493,271, 10) then
+    Result := TPAMean(TPA);
+end;
+
+
+{*
+ Return the (Y-wise) position of the scrollbar.
+*}
+function __GetBankScrollBarPos: Extended;
+var
+  TPA: TPointArray;
+begin
+  Result := 0; 
+  if FindColorTolEx(TPA, 65536, 484,75,486,271, 10) then
+  begin
+    SortTPAEx(TPA, Point(495, 76));
+    Result := (TPA[0].Y - 75) / 172;
+  end;
+end;
+
+
+{*
+ Returns the current bank row as an Integer.
+*}
+function RS_GetBankRow: Integer;
+var bar:Extended;
+begin
+  Bar := __GetBankScrollBarPos; 
+  Result := Round(bar / BANK_SCROLL_DIV);
+end;
+
+
+{*
+ Returns the precise bank row as Extended.
+*}
+function RS_GetBankRowEx: Extended;
+var bar:Extended;
+begin
+  Bar := __GetBankScrollBarPos; 
+  Result := Bar / BANK_SCROLL_DIV;
+end;
+
+
+{*
+ Scrolls down to the geiven bank row.
+*}
+function RS_BankScrollToRow(Row:Integer): Boolean;
+var
+  RowChange,CurRow,i:Integer; 
+  pt: TPoint;
+begin
+  Result := True;
+  if Row > BANK_SCROLL_ROWS then 
+    Row := BANK_SCROLL_ROWS;
+    
+  if not(Abs(RS_GetBankRowEx-Row) <= BANK_SCROLL_EPSILON) then 
+  begin
+    CurRow := RS_GetBankRow
+    RowChange := Trunc((Row - CurRow) * BANK_SCROLL_MUL);
+    pt := __GetBankScrollBarPoint;
+    pt.x := pt.x + RandomRange(-5,5);
+    DragMouseTo(pt, Point(pt.x,pt.y+RowChange), mbLeft);
+    WaitG(150,35);
+    for i:=0 to 5 do
+    begin
+      if Abs(RS_GetBankRowEx-Row) > BANK_SCROLL_EPSILON then
+      begin
+        if RS_GetBankRowEx > Row then
+        begin
+          MoveMouseBox(Box(484,62,493,71));
+          GetMousePos(pt.x,pt.y); 
+          MouseClick2(pt, mbLeft);
+        end;
+        if RS_GetBankRowEx < Row then
+        begin
+          MoveMouseBox(Box(484,274,493,282));
+          GetMousePos(pt.x,pt.y); 
+          MouseClick2(pt, mbLeft);
+        end;
+        if Abs(RS_GetBankRowEx-Row) <= BANK_SCROLL_EPSILON then
+          Break; 
+      end; 
+    end; 
+  end;
+  Result := (RS_GetBankRow = Row);  
+end;
+
+
+{*
+ Converts a Slot to "bankslot coordinates", and checks if the slot is 
+ visible, if the slot is not visible it will try to scroll down/up to the bankslot.
+ 
+ Result is the relative box-id based on current scrollbar.
+*}
+function RS_BankMakeIndexVisible(SlotID: Integer): Integer;
+var
+  x,y,Row,IndexRow: Integer; 
+begin
+  if SlotID > BANK_TOTAL_SLOTS then 
+    SlotID := BANK_TOTAL_SLOTS;
+
+  IndexRow := (SlotID div BANK_COLS);
+  if not(InRange(IndexRow-RS_GetBankRow, 0, BANK_ROWS)) then
+    RS_BankScrollToRow(IndexRow)
+  else 
+    RS_BankScrollToRow(RS_GetBankRow); //Correct it
+  Row := RS_GetBankRow;    
+  y := (SlotID div BANK_COLS) - Row;
+  x := SlotID mod BANK_COLS; 
+  Result := y * BANK_COLS + x;
+end;
+
+
+
+//---|| Open/Close bank and depositbox ||-----------------\\
 
 (*   
  Check if the bank is opened.
@@ -381,6 +556,9 @@ begin
 end;
   
 
+
+//---|| bank and depositbox features ||-----------------\\
+
 (*   
  Press the search-thingy if it's not toggled..
 *)
@@ -445,7 +623,7 @@ begin
   Toggled := FindColorTolEx(TPA, 1777019, 290,305,370,320, 60);
   if not(Toggled) or (Length(TPA) < 500) then
   begin                          
-    MMouseClickEx(Point(240,315),5,2,10,4,mbLeft)
+    MMouseClickEx(Point(330,315),5,2,10,4,mbLeft)
     T := GetTimeRunning + 4000;
     while GetTimeRunning < T do
     begin 
@@ -456,7 +634,6 @@ begin
   end;
   Result := (Toggled) and (Length(TPA) > 500);
 end;
-
 
 
 (*   
@@ -526,53 +703,272 @@ begin
 end;
 
 
+{*  
+ Check if a slot is in use.
+*}
+function RS_BankSlotUsed(SlotID:Integer): Boolean;
+var
+  ID: Integer; 
+  TBA:TBoxArray;  
+  B: TBox;
+  Pt: TPoint;
+begin
+  Result := False; 
+  if not(RS_BankOpen) then Exit;
+  TBA := RS_BankSlotBounds;
+  ID := RS_BankMakeIndexVisible(SlotID);
+  if InRange(ID,0,47) then
+  begin 
+    B := TBA[ID];
+    Result := FindColor(pt.x,pt.y,65536, B.x1, B.y1, B.x2, B.y2);
+  end;
+end;
+
+
+{*  
+ Moves the mouse to the given slot id.
+*}
+function RS_MMouseToBankSlot(SlotID:Integer): Boolean;
+var
+  ID: Integer; 
+  TBA:TBoxArray; 
+  Pt: TPoint;
+begin
+  Result := False; 
+  if not(RS_BankOpen) or 
+     not(InRange(SlotID, 0, BANK_TOTAL_SLOTS)) then 
+    Exit;
+  
+  TBA := RS_BankSlotBounds;
+  ID := RS_BankMakeIndexVisible(SlotID);
+  if InRange(ID,0,47) then
+  begin 
+    Pt := BoxCenter(TBA[ID]);
+    MMouseCircleEx(Pt, 3, 8);
+  end;
+end;
+
+//---|| Deposit ||-----------------\\ 
+
 (*   
  Insert item from you inverntory to bank.
 *)
-function RS_BankDepositItem(ID:Integer; All: Boolean): Boolean;
+function RS_BankDepositItem(SlotID:Integer; All: Boolean): Boolean;
+var 
+  Pt:TPoint;
 begin
   Result := False;
-  if not(RS_BankOpen) then Exit; 
+  if not(RS_BankOpen) then Exit;  
+  Result := not(RS_InvSlotUsedEx(SlotID, False));
+  if not(Result) then
+  begin
+    pt := RS_MMouseToInvSlot(SlotID);
+    case All of
+      False:           
+        begin
+          MouseClick2(pt, mbLeft);
+          Result := True; 
+        end;
+      True:
+        begin
+          if RS_OpenChooseOption(Pt) then
+          begin
+            Result := RS_ChooseOptionAny(['Deposit All', 'Deposit-All']);
+            if Not(Result) then
+              RS_ChooseOption('Cancel');
+          end;
+        end;             
+    end;      
+  end;
 end;
 
 
 (*   
  Insert X items from inventory to bank... (as seen in RS)...
 *)
-function RS_BankDepositItemX(ID:Integer; Amount:Integer): Boolean;
-begin
-  Result := False;
-  if not(RS_BankOpen) then Exit; 
-end;
-
-
-(*   
- Insert items from you inverntory to bank.
-*)
-function RS_BankDepositAllEx(IDs:TIntArray; All: Boolean; Exclude:TIntArray): Boolean;
+function RS_BankDepositItemX(SlotID:Integer; Amount:Integer): Boolean;
+var 
+  Pt:TPoint;  
+  T: Integer;
+  Toggled: Boolean;
 begin
   Result := False;
   if not(RS_BankOpen) then Exit;  
+  Result := not(RS_InvSlotUsedEx(SlotID, False));
+  if not(Result) then
+  begin
+    Pt := RS_MMouseToInvSlot(SlotID);
+    if RS_OpenChooseOption(Pt) then
+    begin
+      Result := RS_ChooseOptionAny(['Deposit X', 'Deposit-X']);
+      if Not(Result) then
+      begin
+        RS_ChooseOption('Cancel'); 
+        Exit;
+      end;
+    end;
+    T := GetTimeRunning + 4000;
+    while GetTimeRunning < T do
+    begin  
+      Toggled := XT_IsTextAt('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1, 0, 1,10,1,'');
+      if Toggled then
+        Break; 
+    end; 
+    if not(Toggled) then Exit;
+    MMouseClickEx(Point(260,430), 50,7,150,30,mbLeft);
+    TypeText(IntToStr(Amount));
+    WaitG(100,25);
+    PressVKey(VK_RETURN);
+    T := GetTimeRunning + 4000;
+    while (GetTimeRunning < T) do
+    begin   
+      Toggled := XT_IsTextAt('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1, 0, 1,10,1,'');
+      if Not(Toggled) then
+        Break; 
+    end;    
+    Result := Not(Toggled);  
+  end;
 end;
 
 
 (*   
  Insert items from you inverntory to bank.
 *)
-function RS_BankDepositAll: Boolean;
+function RS_BankDepositItems(SlotIDs:TIntArray; All: Boolean): Boolean;
+var 
+  i:Integer;
 begin
-  Result := False;
-  if not(RS_BankOpen) then Exit; 
+  Result := True;
+  for i:=0 to High(SlotIDs) do
+    if not(RS_BankDepositItem(SlotIDs[i], All)) then
+      Result := False; //Atleast one indice failed
+end;
+
+
+
+(*   
+ Insert items from you inverntory to bank.
+*)
+function RS_BankDepositItemsX(SlotIDs:TIntArray; Amount:Integer): Boolean;
+var 
+  i:Integer;
+begin
+  Result := True;
+  for i:=0 to High(SlotIDs) do
+    if not(RS_BankDepositItemX(SlotIDs[i], Amount)) then
+      Result := False; //Atleast one indice failed
 end;
 
 
 (*   
  Insert items from you inverntory to bank.
 *)
-function RS_BankDepositItems(IDs:TIntArray; All: Boolean): Boolean;
+function RS_BankDepositAllEx(All:Boolean; Exclude:TIntArray): Integer;
+var 
+  i,ID: Integer;
+  Pattern:TIntArray; 
 begin
-  Result := False;
-  if not(RS_BankOpen) then Exit; 
+  Result := 0;     
+  Pattern := RS_DropPattern(RS_DropPatternGauss());
+  Pattern := RS_DropPatternErrorize(Pattern, RS_DropPatternGauss());
+  for i:=0 to 27 do
+  begin 
+    ID := Pattern[I];
+    if not(TIAContains(Exclude, ID)) then
+      if RS_BankDepositItem(ID, All) then
+        Inc(Result);
+  end;
+end;
+
+
+(*   
+ Insert items from you inverntory to bank.
+*)
+function RS_BankDepositAll: Integer;
+begin
+  Result := RS_BankDepositAllEx(True, []);
+end;
+
+
+
+//---| Withdraw |-----------------
+{*
+ Withdraws the item from the bank.
+ Amount is the number of items you wish to withdraw..
+ If Amount is -1 then it will withdraw all.
+*}
+function RS_WithdrawItem(SlotID, Amount:Integer): Boolean;
+var
+  Pt: TPoint;
+  T: Integer;
+  Toggled: Boolean;
+begin
+  if RS_BankSlotUsed(SlotID) then
+  begin
+    RS_MMouseToBankSlot(SlotID);
+    GetMousePos(pt.x,pt.y);
+    case Amount of
+      //Withdraw all
+     -1:begin
+          if RS_OpenChooseOption(Pt) then
+          begin
+            Result := RS_ChooseOptionAny(['Withdraw All', 'Withdraw-All']); 
+            if not(Result) then RS_CloseChooseOption;
+          end; 
+        end;
+      //Withdraw 1
+      1:begin
+          MouseClick2(Pt, mbLeft);
+          Result := True;
+        end; 
+      //Withdraw 5
+      5:begin
+          if RS_OpenChooseOption(Pt) then
+          begin
+            Result := RS_ChooseOptionAny(['Withdraw 5', 'Withdraw-5']); 
+            if not(Result) then RS_CloseChooseOption;
+          end; 
+        end; 
+      //Withdraw 10
+      10:begin
+          if RS_OpenChooseOption(Pt) then
+          begin
+            Result := RS_ChooseOptionAny(['Withdraw 10', 'Withdraw-10']); 
+            if not(Result) then RS_CloseChooseOption;
+          end; 
+        end;
+      //Withdraw X
+      else
+        begin
+          if RS_OpenChooseOption(Pt) then
+          begin
+            Result := RS_ChooseOptionAny(['Withdraw X', 'Withdraw-X']); 
+            if not(Result) then RS_CloseChooseOption;
+          end;
+           
+          T := GetTimeRunning + 4000;
+          while GetTimeRunning < T do
+          begin  
+            Toggled := XT_IsTextAt('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1, 0, 1,10,1,'');
+            if Toggled then
+              Break; 
+          end; 
+          if not(Toggled) then Exit;
+          MMouseClickEx(Point(260,430), 50,7,150,30,mbLeft);
+          TypeText(IntToStr(Amount));
+          WaitG(100,25);
+          PressVKey(VK_RETURN);
+          T := GetTimeRunning + 4000;
+          while (GetTimeRunning < T) do
+          begin   
+            Toggled := XT_IsTextAt('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1, 0, 1,10,1,'');
+            if Not(Toggled) then
+              Break; 
+          end;    
+          Result := Not(Toggled);   
+        end;
+    end; 
+  end;
 end;
 
 
