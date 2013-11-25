@@ -99,10 +99,52 @@ end;
 
 
 (*   
+ Pretty dynamic solution for uptext, does not strugle as much with white colors.
+ I think it's quite reliable.
+*)
+function RS_GetUpText: String;
+var 
+  TPA: TPointArray;
+  ATPA: T2DPointArray;
+  Mat,MatT: T2DIntArray;
+  i,v,width: Integer;
+  Mdf:Extended; 
+  TSA: TStrArray;
+begin
+  Width := 450;
+  Mat := XT_Bmp2Matrix(XT_ClientBMP(8,7,Width,23), False);
+  Mat := XT_ImBrighten(Mat, -0.55); 
+  SetLength(TSA, 20);
+  Mdf := 0.3; 
+
+  for i:=0 to High(TSA) do
+  begin
+    MatT := XT_ImEnhance(Mat, 255, Mdf + (i*0.02));
+    MatT := XT_ImThreshold(MatT, 1, 0, 255, False);   
+    XT_ImFindColorTolEx(MatT, TPA, 255, 1);
+    ATPA := XT_ClusterTPAEx(TPA, 1,2, True);
+    XT_ATPAFilter(ATPA, 5, 2,1,15,15, False);
+    TPA := MergeATPA(ATPA);
+    TSA[i] := XT_GetTextFromTPA(TPA, Width, [RS_UpFontXT], 1, 2, 8, 1, '');
+  end;
+  v := 0;
+  for i:=0 to High(TSA) do 
+    if Length(TrimOthers(TSA[i])) > Length(TrimOthers(TSA[v])) then
+      v := i; 
+  TSA := Explode(#13, TSA[v]);    
+  Result := TSA[0];
+  SetLength(ATPA, 0);
+  SetLengthTPA(TPA, 0);
+  SetLengthATIA(MatT, 0);
+  SetLengthATIA(Mat, 0);
+end;
+
+
+(*   
  Simple function to get the uptext (Text in the Left-Top corner in RS)
  Allows for modifiers. 
 *)
-function RS_GetUpTextEx(ThreshMod:Byte; Tolerance:Integer): String;
+function RS_GetUpTextOLD(ThreshMod:Byte; Tolerance:Integer): String;
 var 
   TPA,TPA2: TPointArray;
   ATPA: T2DPointArray;
@@ -112,7 +154,7 @@ var
 begin
   bmp := TSCARBitmap.Create('');
   bmp.SetSize(470, 20);
-  Mat := XT_Bmp2Matrix(XT_ClientBMP(8,7,470,25), False); 
+  Mat := XT_Bmp2Matrix(XT_ClientBMP(8,7,470,23), False); 
   //Will be better if I made: XT_ImThresholdAdpativeBlocks
   Mat := XT_ImThresholdAdaptive(Mat,0,255,False,TM_Mean,ThreshMod);
   XT_BmpSetData(bmp, Mat, True); 
@@ -142,19 +184,12 @@ begin
   bmp.SetPixels(TPA, clRed); 
   
   //OCR     
-  Result := XT_GetTextAt(Box(0,0,469,19), RS_UpFontXT, 2, clRed, 1, 10, 1, '');
+  Result := XT_GetTextAtEx(Box(0,0,469,19), [RS_UpFontXT], 1, 2, [clRed], 1, 10, 1, '');
   //GetTextAtEx(0, 0, 25, RS_UpFont, False, False, 0, 3, clRed, 255, True, tr_AllChars);
   SetClient(client).Free;
+  Result := TrimEx(#13#10, Result);
 end;
 
-
-(*   
- Simple function to get the uptext (Text in the Left-Top corner in RS)          
-*)
-function RS_GetUpText: String;
-begin
-  Result := RS_GetUpTextEx(85, 55);
-end;
 
 
 (*   
@@ -163,12 +198,6 @@ end;
 function RS_IsUpText(Text: String): Boolean;
 begin
   Result := StrContains(Text, RS_GetUpText);
-end;
-
-// With modifiers.
-function RS_IsUpTextEx(Text: String; ThreshMod:Byte; Tolerance:Integer): Boolean;
-begin
-  Result := StrContains(Text, RS_GetUpTextEx(ThreshMod, Tolerance));
 end;
 
 
@@ -180,12 +209,6 @@ begin
   Result := StrContainsAny(TextArr, RS_GetUpText);
 end;
 
-// With modifiers.
-function RS_IsUpTextAnyEx(TextArr: TStrArray; ThreshMod:Byte; Tolerance:Integer): Boolean;
-begin
-  Result := StrContainsAny(TextArr, RS_GetUpTextEx(ThreshMod, Tolerance));
-end;
-
 
 (*   
  Check if the uptext contains all of your strings.. 
@@ -193,12 +216,6 @@ end;
 function RS_IsUpTextAll(TextArr: TStrArray): Boolean;
 begin
   Result := StrContainsAll(TextArr, RS_GetUpText);
-end;
-
-// With modifiers.
-function RS_IsUpTextAllEx(TextArr: TStrArray; ThreshMod:Byte; Tolerance:Integer): Boolean;
-begin
-  Result := StrContainsAll(TextArr, RS_GetUpTextEx(ThreshMod, Tolerance));
 end;
 
 
@@ -213,7 +230,7 @@ end;
 *)
 function RS_GetChatMsgLast: String;
 begin
-  Result := XT_GetTextAtEx(Box(8,445,497,460), [RS_SmallFontXT], 1, [clBlack, clBlue], 1,2,1,'');
+  Result := XT_GetTextAtEx(Box(8,445,497,460), [RS_SmallFontXT], 1,1, [clBlack, clBlue], 1,2,1,'');
 end;
 
 
@@ -227,7 +244,7 @@ begin
     Exit;
   end;
   RowID := RowID * 14;
-  Result := XT_GetTextAtEx(Box(8,445-RowID,495,458-RowID), [RS_SmallFontXT], 1, [clBlack, clBlue], 1,10,1,'');
+  Result := XT_GetTextAtEx(Box(8,445-RowID,495,458-RowID), [RS_SmallFontXT], 1, 1, [clBlack, clBlue], 1,10,1,'');
 end;
 
 
@@ -352,7 +369,7 @@ begin
     OffsetTPA(TPA, -B.X1, -B.Y1);
     bmp.SetPixels(XT_InvertTPA(TPA), $FFFFFF);
     client := SetClient(TSCARBitmapClient.Create(bmp));   
-    Str := XT_GetTextDynAt(Box(0,0,W-1,H-1), RS_OptionFontXT, 1,5,1, 0, False, '');
+    Str := XT_GetTextDynAtEx(Box(0,0,W-1,H-1), [RS_OptionFontXT], 1,1, 5,1, 0, False, '');
     SetClient(client).Free;
     Result := Explode(#13#10, Str);   
   end;
@@ -583,7 +600,7 @@ begin
   
   for i:=0 to High(Boxes) do
   begin
-    Text := XT_GetTextAtEx(Boxes[i], [RS_UpFontXT], 1, TextColors, ColorTol, 8, 1,'');
+    Text := XT_GetTextAtEx(Boxes[i], [RS_UpFontXT], 1, 1, TextColors, ColorTol, 8, 1,'');
     if Length(Text) <> 0 then
     begin
       SetLength(Result, Length(Result) + 1);

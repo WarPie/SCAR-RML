@@ -54,7 +54,7 @@ var
 begin
   if RS_OpenTab(RS_Tab_Stats) then
   begin
-    Str := XT_GetTextAt(Box(534,209,740,458), RS_StatFontXT, 1, clYellow, 1,10,1,''); 
+    Str := XT_GetTextAtEx(Box(534,209,740,458), [RS_StatFontXT], 1,1, [clYellow], 1,10,1,''); 
     Rows := Explode(#13#10, Str); 
     if High(Rows) < 0 then Exit; 
     H := High(Rows) div 2;
@@ -84,7 +84,7 @@ begin
   if RS_OpenTab(RS_Tab_Stats) then
   begin
     Area := __IDToSkillBox(ID);
-    Skill := XT_GetTextAt(Area, RS_StatFontXT, 1, clYellow, 1,10,1,'');
+    Skill := XT_GetTextAtEx(Area, [RS_StatFontXT], 1,1, [clYellow], 1,10,1,'');
     if (ID < 23) and (Length(Skill)>=1) then 
     begin
       TSA := Explode(#13#10, Skill);
@@ -106,7 +106,7 @@ begin
   if RS_OpenTab(RS_Tab_Stats) then
   begin
     Area := __IDToSkillBox(ID);
-    Skill := XT_GetTextAt(Area, RS_StatFontXT, 1, clYellow, 1,10,1,'');
+    Skill := XT_GetTextAtEx(Area, [RS_StatFontXT], 1,1, [clYellow], 1,10,1,'');
     if (ID < 23) and (Length(Skill)>=1) then 
     begin
       TSA := Explode(#13#10, Skill);
@@ -128,7 +128,7 @@ begin
   if RS_OpenTab(RS_Tab_Stats) then
   begin
     Area := __IDToSkillBox(ID);
-    Skill := XT_GetTextAt(Area, RS_StatFontXT, 1, clYellow, 1,10,1,'');
+    Skill := XT_GetTextAtEx(Area, [RS_StatFontXT], 1,1, [clYellow], 1,10,1,'');
     if (ID < 23) and (Length(Skill)>=1) then 
     begin
       TSA := Explode(#13#10, Skill);

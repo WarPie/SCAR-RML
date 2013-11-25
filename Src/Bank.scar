@@ -25,7 +25,7 @@
  function RS_BankDisableSearch: Boolean;  
  function RS_BankToggleNote: Boolean;
  function RS_BankToggleItem: Boolean;
- function RS_BankSearchFor(ItemName:String): Integer; 
+ function RS_BankSearchFor(ItemName:String): Integer;
  function RS_MouseToBankSlot(SlotID:Integer): Boolean; 
  >> Deposit:
  function RS_BankDepositItem(SlotID:Integer; All: Boolean): Boolean;
@@ -373,9 +373,9 @@ end;
 *)
 function RS_BankOpen: Boolean;
 begin           
-  Result := XT_IsTextAt('The Bank', Box(180,30,240,50), RS_MainFontXT, 1, 2070783, 1,10,1,'');
+  Result := XT_IsTextAtEx('The Bank', Box(180,30,240,50), RS_MainFontXT, 1,1, 2070783, 1,10,1,'');
   if not Result then
-    Result := XT_IsTextAt('Rearrange mode',Box(52,288,157,301), RS_SmallFontXT, 1, 2070783, 1,10,1,''); 
+    Result := XT_IsTextAtEx('Rearrange mode',Box(52,288,157,301), RS_SmallFontXT, 1,1, 2070783, 1,10,1,''); 
 end;
 
 
@@ -384,9 +384,9 @@ end;
 *)
 function RS_DepositBoxOpen: Boolean;
 begin           
-  Result := XT_IsTextAt('The Bank', Box(140,32,205,50), RS_MainFontXT, 1, 2070783, 1,10,1,'');
+  Result := XT_IsTextAtEx('The Bank', Box(140,32,205,50), RS_MainFontXT, 1,1, 2070783, 1,10,1,'');
   if not Result then
-    Result := XT_IsTextAt('Deposit Box', Box(300,32,400,50), RS_SmallFontXT, 1, 2070783, 1,10,1,''); 
+    Result := XT_IsTextAtEx('Deposit Box', Box(300,32,400,50), RS_SmallFontXT, 1,1, 2070783, 1,10,1,''); 
 end;
 
 
@@ -608,7 +608,7 @@ begin
   end;
   Result := (SearchInActive) and (Length(TPA) > 500);
   if Not(Result) then
-    Result := XT_IsTextAt('Show items',Box(60,385,210,410), RS_MainFontXT, 1, clBlack, 1,10,1,'');
+    Result := XT_IsTextAtEx('Show items',Box(60,385,210,410), RS_MainFontXT, 1,1, clBlack, 1,10,1,'');
 end;
 
 
@@ -695,7 +695,7 @@ begin
     TypeText(ItemName); 
     T := GetTimeRunning + 3000;
     while (GetTimeRunning < T) do 
-      if XT_IsTextAt(Lowercase(ItemName), Box(283,34,470,50), RS_MainFontXT, 1, clRed, 1,10,1,'') then
+      if XT_IsTextAtEx(Lowercase(ItemName), Box(283,34,470,50), RS_MainFontXT, 1,1, clRed, 1,10,1,'') then
         Break;
     
     if FindColorEx(TPA, 65536, BNK_CONTX1,BNK_CONTY1,BNK_CONTX2,BNK_CONTY2) then
@@ -811,7 +811,7 @@ begin
     T := GetTimeRunning + 4000;
     while GetTimeRunning < T do
     begin  
-      Toggled := XT_IsTextAt('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1, 0, 1,10,1,'');
+      Toggled := XT_IsTextAtEx('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1,1, 0, 1,10,1,'');
       if Toggled then
         Break; 
     end; 
@@ -823,7 +823,7 @@ begin
     T := GetTimeRunning + 4000;
     while (GetTimeRunning < T) do
     begin   
-      Toggled := XT_IsTextAt('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1, 0, 1,10,1,'');
+      Toggled := XT_IsTextAtEx('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1,1, 0, 1,10,1,'');
       if Not(Toggled) then
         Break; 
     end;    
@@ -950,7 +950,7 @@ begin
           T := GetTimeRunning + 4000;
           while GetTimeRunning < T do
           begin  
-            Toggled := XT_IsTextAt('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1, 0, 1,10,1,'');
+            Toggled := XT_IsTextAtEx('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1,1, 0, 1,10,1,'');
             if Toggled then
               Break; 
           end; 
@@ -962,7 +962,7 @@ begin
           T := GetTimeRunning + 4000;
           while (GetTimeRunning < T) do
           begin   
-            Toggled := XT_IsTextAt('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1, 0, 1,10,1,'');
+            Toggled := XT_IsTextAtEx('Enter amount:', Box(160,380,344,410), RS_MainFontXT, 1,1, 0, 1,10,1,'');
             if Not(Toggled) then
               Break; 
           end;    

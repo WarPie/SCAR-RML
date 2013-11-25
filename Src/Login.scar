@@ -5,7 +5,7 @@
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
 type
   RS_TLoginMessage = record 
-    CheckPt :TPoint; 
+    CheckBox :TBox; 
     CheckMsg:String; 
   end;  
   
@@ -21,19 +21,16 @@ const
   LOGIN_INVALID          = 10003; 
   LOGIN_DISABLED         = 10004;
   LOGIN_ENTER_DETAILS    = 10005;
-  LOGIN_VOTE_TO_PLAY     = 10006;
-  LOGIN_ENTER_PASSWORD   = 10007;
-  LOGIN_ENTER_USERNAME   = 10008; 
-  LOGIN_INCORRECT_LOGINS = 10009; 
-  LOGIN_SERVER_UPDATE    = 10010;
-  LOGIN_FULL_WORLD       = 10011;
-  LOGIN_LOGIN_LIMIT      = 10013;
-  LOGIN_TRANSFERRING     = 10014;
+  LOGIN_INCORRECT_LOGINS = 10006; 
+  LOGIN_SERVER_UPDATE    = 10007;
+  LOGIN_FULL_WORLD       = 10008;
+  LOGIN_LOGIN_LIMIT      = 10009;
+  LOGIN_TRANSFERRING     = 10010;
 
 
-function RS_LoginMessage(CheckPt:TPoint; CheckMsg:String): RS_TLoginMessage;
+function RS_LoginMessage(CheckBox:TBox; CheckMsg:String): RS_TLoginMessage;
 begin
-  Result.CheckPt := CheckPt;
+  Result.CheckBox := CheckBox;
   Result.CheckMsg:= CheckMsg;
 end;
 
@@ -52,22 +49,18 @@ end;
 *}
 procedure RS_LoadLogin;
 begin
-  SetLength(RS_LoginMessageArray,15); 
-  RS_LoginMessageArray := [RS_LoginMessage(Point(307, 214), 'Connecting'),
-                           RS_LoginMessage(Point(270, 199), 'Your acc'),
-                           RS_LoginMessage(Point(293, 214), 'Error conn'),
-                           RS_LoginMessage(Point(261, 214), 'Invalid user'),
-                           RS_LoginMessage(Point(98, 214),  'Your account has'),
-                           RS_LoginMessage(Point(250, 214), 'Enter your'),
-                           RS_LoginMessage(Point(299, 199), 'You need to vote'),
-                           RS_LoginMessage(Point(238, 214), 'Please enter your username'),
-                           RS_LoginMessage(Point(288, 214), 'Please enter your password'),
-                           RS_LoginMessage(Point(233, 199), 'Too many'),
-                           RS_LoginMessage(Point(288, 199), 'The server'),
-                           RS_LoginMessage(Point(284, 199), 'RuneScape has'),
-                           RS_LoginMessage(Point(326, 199), 'This world is full'),
-                           RS_LoginMessage(Point(313, 199), 'Login limit'),
-                           RS_LoginMessage(Point(256, 199), 'You have only j')]; 
+  SetLength(RS_LoginMessageArray,11); 
+  RS_LoginMessageArray := [RS_LoginMessage(Box(307,199,450,235), 'Connecting'),
+                           RS_LoginMessage(Box(270,199,450,235), 'Your acc'),
+                           RS_LoginMessage(Box(293,199,450,235), 'Error conn'),
+                           RS_LoginMessage(Box(261,199,450,235), 'Invalid user'),
+                           RS_LoginMessage(Box(98, 214,290,235), 'Your account has'),
+                           RS_LoginMessage(Box(250,199,390,235), 'nter your user'),
+                           RS_LoginMessage(Box(233,199,390,230), 'Too many'),
+                           RS_LoginMessage(Box(284,199,450,230), 'RuneScape has'),
+                           RS_LoginMessage(Box(326,199,450,230), 'This world is full'),
+                           RS_LoginMessage(Box(313,199,390,230), 'Login limit'),
+                           RS_LoginMessage(Box(250,198,512,216), 'ou have only just')]; 
 end;
 
 
@@ -158,7 +151,7 @@ end;
 (*
  Janilabos work!
 *) 
-function RS07_GetLoginMessageID: Integer;
+function RS_GetLoginMessageID: Integer;
 var
   h, i: Integer;
 begin
@@ -167,122 +160,104 @@ begin
     Exit;
   h := High(RS_LoginMessageArray);
   for i := 0 to h do
-    if IsTextAtEx(RS_LoginMessageArray[i].checkPt.X, RS_LoginMessageArray[i].checkPt.Y, RS_LoginMessageArray[i].checkMsg, 0, RS_MainFont, False, False, 0, 0, cl_Yellow) then
+  begin
+    if XT_IsTextAtEx(RS_LoginMessageArray[i].checkMsg, RS_LoginMessageArray[i].checkBox, RS_MainFontXT, 1,1, clYellow, 1,10,1,'') then
     begin
       Result := (10000 + i);
       Break;
     end;
+  end;
 end;
 
 
-{   
-#---------------------------------------------------------------------
-def rs07_solveWelcomeScreen():
-    mouse.move_click((460,293), 1, rand=(50,12))
-    for _ in range(20): 
-        if not rs07_isLoginScreen():
-            general.randwait(0.25,0.5)
-        else:
-            break;
-    return rs07_isLoginScreen()
+procedure RS_SolveLoginScreen;
+var 
+  x,y,t:Integer;
+begin
+  if RS_AtLoginNewUserPage then
+  begin
+    MMouseOvalEx(Point(380,322), 3,8, 6,20);
+    GetMousePos(x,y);
+    MouseClick2(Point(x,y), mbLeft);
+    t := GetTimeRunning + 3000;
+    while GetTimeRunning < t do
+      if not(RS_AtLoginNewUserPage) then
+        Break;
+  end; 
 
-def rs07_sloveLobbyScreen():
-    mouse.box([290,310,350,335], 1)
-    for _ in range(30):
-        general.wait(0.3)
-        if rs07_loggedIn(): 
-            return True
-    return False
+  if RS_AtLogin then
+  begin
+    MMouseOvalEx(Point(460,295), 3,8, 6,20);
+    GetMousePos(x,y);
+    MouseClick2(Point(x,y), mbLeft);
+    t := GetTimeRunning + 3000;
+    while GetTimeRunning < t do
+      if not(RS_AtLogin) then
+        Break;
+  end;  
+end;
 
-#---------------------------------------------------------------------
-#None
-def rs07_setNameAndPass(uname, pwd):
-    login_box = [272,256,555,271]
-    passw_box = [272,271,555,288]
-    info_box =  [272,256,555,288]
-    while 1:
-        data = target.find((255,255,0), info_box, 10)
-        if data: break;
 
-    pt = pointtools.mean_pt(data)
-    if point_in_rect(pt, passw_box):
-        keyboard.press_key('Tab')
-
-    keyboard.write_text(uname)
-    keyboard.press_key('Tab')
-    keyboard.write_text(pwd)
+//Supersimple hacky loginfunction..
+function RS_LoginPlayer(username,password:String): Boolean;
+var
+  T,x,y,msg:Integer;
+  DoContinue,Mark: Boolean;
+begin
+  Result := True;
+  if not(RS_LoggedIn) then
+  begin
+    RS_SolveLoginScreen;  
+    msg := RS_GetLoginMessageID;
+    Result := (msg <> -1) and (msg <> LOGIN_INVALID) and (msg <> LOGIN_DISABLED);
+    if not(Result) then Exit;
     
-    return mouse.box([265,310,330,335], 1)
-   
-   
-#Bool
-def rs07_login(uname, pwd):
-    def invalidLogin():
-        if OCR.isTextAt2('Invalid', [245,210,520,240], 'UpChars2', ['yellow']):
-            return True
+    WaitG(130,25);
+    TypeText(Username);
+    WaitG(130,25);
+    PressVKey(VK_TAB);
+    WaitG(130,25);
+    TypeText(Password);
+    WaitG(130,25);
+    MMouseOvalEx(Point(302,322), 3,8, 6,20);
+    GetMousePos(x,y);
+    MouseClick2(Point(x,y), mbLeft);
+    Wait(2000);    
+    
+    msg := RS_GetLoginMessageID;  
+    if (msg = LOGIN_INVALID) or 
+       (msg = LOGIN_DISABLED) or
+       (msg = LOGIN_CONNETCION_ERROR) or
+       (msg = LOGIN_IS_ONLINE) then
+    begin
+      Result := False;
+      Exit;   
+    end;
+    
+    T := GetTimeRunning + 10000; 
+    Mark := False;
+    while GetTimeRunning < T do
+    begin 
+      if (RS_GetLoginMessageID = LOGIN_TRANSFERRING) and not(Mark) then
+      begin
+        Mark := True;
+        T := GetTimeRunning + 40000;
+      end;
+      DoContinue := RS_AtWelcomeScreen;
+      if DoContinue then Break;
+    end;
+    if Not(DoContinue) then Exit;
+    
+    MMouseOvalEx(Point(400,330), 6,12, 24,36);
+    GetMousePos(x,y);
+    MouseClick2(Point(x,y), mbLeft);
 
-    def resetFields():
-        if OCR.isTextAt2('Invalid', [245,210,520,240], 'UpChars2', ['yellow']):
-            mouse.box([425,310,500,340], 1)
-
-    #---------------------------------------
-    if rs07_loggedIn(): return True
-    resetFields()
-    
-    if rs07_isWelcomeScreen():
-        if not rs07_solveWelcomeScreen():
-            return False
-    if rs07_isLobbyScreen():
-        return rs07_sloveLobbyScreen()
-    
-    rs07_setNameAndPass(uname, pwd)
-    
-    for i in range(200):
-        if not(rs07_isLoginScreen()):
-            break;
-        general.wait(0.060)
-    
-    print "Connecting to server..."    
-    for i in range(200):
-        if not(rs07_isConnectScreen()):
-            break;
-        general.wait(0.060)
-    
-    if invalidLogin():
-        print "Bad username or password!"
-        return False
-          
-    for i in range(200):
-        if not(rs07_isLobbyScreen()):
-            general.wait(0.060)
-        else:
-            break
-    
-    if rs07_isLobbyScreen():
-        mouse.box([290,310,350,335], 1)
-        for _ in range(30):
-            general.wait(0.3)
-            if rs07_loggedIn(): 
-               print "Successfully logged in!"
-               return True
-
-    print "Did not manage to login!"
-    return False
-   
-   
-#Bool
-def rs07_logout(retry=True, drange=5):
-    if rs07_loggedOut(): 
-        return True
-
-    if tabs.rs07_setGameTab("Logout"):
-        for _ in range(drange):
-            mouse.box([581,368,700,388], 1)
-            general.randwait(1.0,3.2)
-            if rs07_loggedOut():
-                break;
-                
-        if rs07_loggedIn() and retry==True:
-                rs07_logout(retry=False)
-
-    return rs07_loggedOut()  }
+    T := GetTimeRunning + 10000;
+    while GetTimeRunning < T do
+    begin
+      DoContinue := RS_LoggedIn;
+      if DoContinue then Break;
+    end;
+    Result := DoContinue;
+  end;
+end;
