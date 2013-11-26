@@ -72,6 +72,25 @@ begin
 end; 
    
 
-
+procedure PickUpMouse;
+var 
+  x,y,x1,y1,i: Integer; 
+begin
+  GetMousePos(x,y);
+  GetMousePos(x1,y1);
+  case Random(2) of
+    0: MoveMouse(x + RandomG(30,7), y - 20 - RandomG(140,30));
+    1: MoveMouse(x - RandomG(30,7), y - 20 - RandomG(140,30));
+  end;
+  WaitG(200, 30);
+  for i:=0 to RandomRange(0,2) do
+  begin
+    WaitG(100, 30); 
+    GetMousePos(x,y);
+    MMouseCircle(Point(x,y),10);
+  end;
+  WaitG(300, 70);
+  MMouseCircle(Point(x1, y1), 12);
+end;
 
 

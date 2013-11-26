@@ -3,3 +3,85 @@
  Contains parts taken from MSSL (By Janilabo).
  All rights reserved. Copying must include this header.
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+type
+  TRSObject = record
+    Colors, Tolerances: TIntArray;
+    CTS: Integer;
+    MinPoints: Integer;
+    Size: TBox;
+    SplitW, SplitH: Integer;
+    SatMod, HueMod: Extended;
+    Align: Boolean;
+    UpText: TStrArray;
+    X1,Y1,X2,Y2: Integer;
+  end;
+
+
+function RS_NewObject(Colors, Tolerances: TIntArray; CTS, MinPoints: Integer; Size:TBox; SplitW,SplitH: Integer; UpText: TStrArray): TRSObject;
+begin
+  Result.Colors := Colors;
+  Result.Tolerances := Tolerances;
+  Result.CTS := CTS;
+  Result.Size := Size;
+  Result.MinPoints := MinPoints;
+  Result.UpText := UpText;
+  Result.SplitW := SplitW;
+  Result.SplitH := SplitH;
+  Result.Align := False;
+  Result.SatMod := 0.2;
+  Result.HueMod := 0.2;
+  Result.X1 := MSX1; Result.Y1 := MSY1;
+  Result.X2 := MSX2; Result.Y2 := MSY2;
+end;
+ 
+  
+function RS_FindObjectTPA(var TPA:TPointArray; Obj:TRSObject): Boolean;
+var
+  i,j, LenTol: Integer;
+  OldCTS:Integer; OldSat,OldHue:Extended; 
+  TMP,TMP2:TPointArray;
+  ATPA : T2DPointArray;
+  pt:TPoint;
+begin
+  LenTol := Length(Obj.Tolerances);
+  if (Length(Obj.Colors) <> LenTol) and (LenTol <> 1) then
+  begin
+    WriteLn('[RML] Error in FindObject: Length of Colors does not match length of Tolerances');
+    Exit;
+  end;
+  GetColorspeed2Modifiers(OldHue, OldSat);
+  OldCTS := GetColorToleranceSpeed;
+  
+  ColorToleranceSpeed(Obj.CTS);
+  SetColorspeed2Modifiers(Obj.HueMod, Obj.SatMod);
+  if (LenTol = 1) then       
+    FindColorsTolEx(TMP2, Obj.Colors, Obj.X1, Obj.Y1, Obj.X2, Obj.Y2, Obj.Tolerances[0])
+  else  
+    for i:=0 to High(Obj.Colors) do
+    begin
+      FindColorTolEx(TMP,Obj.Colors[i], Obj.X1, Obj.Y1, Obj.X2, Obj.Y2, Obj.Tolerances[i]);
+      TMP2 := XT_UniteTPA(TMP2,Tmp,False);
+      SetLength(TMP, 0);
+    end;
+  {end}
+  
+  ATPA := XT_ClusterTPAEx(TMP2,Obj.SplitW,Obj.SplitH,True); 
+  XT_ATPAFilter(ATPA, Obj.MinPoints, Obj.Size.x1, Obj.Size.y1, Obj.Size.x2, Obj.Size.y2, Obj.Align);
+  for i:=0 to High(ATPA) do
+  begin
+    pt := TPAMean(ATPA[i]);
+    MMouseCircle(pt, 3);
+    if (Random(7) = 0) then PickUpMouse;  
+    Wait(50); //Ping...
+    if RS_IsUpTextAny(Obj.UpText) or (Obj.UpText[0] = '') then
+    begin
+      j := Length(TPA);
+      SetLength(TPA, j+1);
+      TPA[j] := pt;
+      Result := True;
+    end;
+  end;  
+  XT_SortTPAFrom(TPA, Point(MSCX, MSCY));
+  ColorToleranceSpeed(OldCTS);
+  SetColorspeed2Modifiers(OldHue, OldSat);
+end;

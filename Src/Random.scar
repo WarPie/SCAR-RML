@@ -100,8 +100,8 @@ end;
 procedure WaitG(MS, StdDev:Integer);
 begin
   Case RandomRange(0,2) = 1 of
-    True:  Wait(MS + RandomG(StdDev*4, StdDev));
-    False: Wait(MS - RandomG(StdDev*4, StdDev));
+    True:  Wait(MS + RandomG(StdDev*5, StdDev));
+    False: Wait(MS - RandomG(StdDev*5, StdDev));
   end;
 end;
 

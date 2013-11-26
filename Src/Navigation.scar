@@ -109,24 +109,25 @@ end;
 *}
 function RS_SetCompass(dgrs: Extended): Extended;
 var
-  T,dir:Integer;
+  i,T,dir:Integer;
 begin
-  dgrs := XT_Mod(dgrs,360);
-  Result := RS_GetCompassAngle;
-  if Abs(XT_DeltaAngle(Dgrs, Result)) <= 1 then Exit;
-  if XT_DeltaAngle(Dgrs, Result) > 0 then
-    dir := RotateDir_Left
-  else
-    dir := RotateDir_Right;
-
-  RS_RotateCompass(dir);
-  T := GetTimeRunning + 8000;
-  while GetTimeRunning < T do
+  for i:=0 to 1 do //Correction
   begin
-    if Abs(XT_DeltaAngle(Dgrs, RS_GetCompassAngle)) <= 3 then
-      Break;
-  end;     
-  RS_RotateCompass(RotateDir_Nil); 
+    dgrs := XT_Mod(dgrs,360);
+    Result := RS_GetCompassAngle;
+    if Abs(XT_DeltaAngle(Dgrs, Result)) <= 1 then Exit;
+    if XT_DeltaAngle(Dgrs, Result) > 0 then
+      dir := RotateDir_Left
+    else
+      dir := RotateDir_Right;
+
+    RS_RotateCompass(dir);
+    T := GetTimeRunning + 8000;
+    while GetTimeRunning < T do
+      if Abs(XT_DeltaAngle(Dgrs, RS_GetCompassAngle)) <= 2.5 then
+        Break;    
+    RS_RotateCompass(RotateDir_Nil); 
+  end;
 end;
 
 

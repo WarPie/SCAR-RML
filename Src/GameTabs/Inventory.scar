@@ -39,7 +39,7 @@ const
 *}
 function RS_InvGetSlotBounds: TBoxArray;
 begin 
-  Result := RS_InvSlotBounds; //Can be loaded on startup.
+  Result := RS_InvSlotBounds;
 end;
 
 

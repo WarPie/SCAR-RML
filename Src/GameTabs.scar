@@ -38,16 +38,18 @@ end;
      
    
 function __IDToTabBox(ID:Integer): TBox;
-var row,col:Integer;
+var 
+  row,col:Integer;
+  TBA:TBoxArray;
 begin
   col := ID mod 7;
   row := ID div 7;
-  Result.x1 := 530 + (Col * 32);
-  Result.y1 := 170 + (Row * 300);
-  Result.x2 := Result.x1 + 25;
-  Result.y2 := Result.y1 + 25;
-  Result.x1 := Result.x1 + 5;
-  Result.y1 := Result.y1 + 5;
+  case Row of
+    0: TBA :=  PartitionBoxEx(Box(527,168,760,204), 1, 7, -3);
+    1: TBA :=  PartitionBoxEx(Box(527,466,760,502), 1, 7, -3); 
+    else Exit;
+  end;
+  Result:= TBA[col];
 end; 
 
 

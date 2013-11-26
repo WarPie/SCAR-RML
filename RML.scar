@@ -45,7 +45,74 @@ var
 {$I Src/World.scar}
 
 
-procedure SetupRS07;
+(*
+ Tries to activate the window containing RS (the java canvas).
+ If posible it sets the client as well to this window, so no
+ need to target runescape manually.
+ If it succeed it will also click on the RS-screen to highlight
+ it for input as well.
+*)
+procedure ActivateRSWindow;
+var 
+  Client: TSCARClient;
+  Childs,Parents:THwndArray;
+  RuneScape, Parent: LongWord;
+  i,j,W,H,x,y:Integer;
+  Found:Boolean;
+  B: TBox;
+begin
+  Parents := FindWindowsEx(GetDesktopWindow,'Old School RuneScape','',False,False,True);
+  for i:=0 to High(Parents) do
+  begin 
+    B := GetWindowBox(Parents[i]);
+    W := B.x2 - B.x1 + 1;
+    H := B.x2 - B.x1 + 1;
+    if (W > 765) and (H > 503) then
+    begin
+      Childs := FindWindowsBySize(Parents[i],765,503,True);
+      for j:=0 to High(childs) do
+        if GetWindowClass(Childs[j]) = 'SunAwtCanvas' then 
+        begin
+          Parent := Parents[i];
+          RuneScape := Childs[j];
+          Found := True;
+          Break; 
+        end;
+    end;
+  end;
+  if not(Found) then
+  begin
+    WriteLn('[RML] RuneScape not found. Select and highlight target manually');
+    Exit;
+  end; 
+  ActivateWindow(RuneScape);   
+  Client := TSCARWindowClient.Create(RuneScape);
+  SetClient(Client); 
+  Client.Update;
+  case Random(3) of 
+    0: MoveMouseBox(Box(720,10,760,145)); 
+    1: MoveMouseBox(Box(520,10,560,145));
+    2: begin 
+        if (CountColorTol(1908322, 405,480,512,500, 35) >= 60) then 
+        begin
+          W := RS_GetOpenTab;
+          RS_OpenTab(Random(6));
+          Wait(500);
+          RS_OpenTab(W);
+        end else
+          MoveMouseBox(Box(150,20,730,160));
+       end;    
+  end;
+  GetMousePos(x,y); 
+  ClickMouseEx(x,y,mbLeft,RandomG(64,25));
+end;
+
+
+(*
+ Loads all neaded data in to memory. 
+ This should always be called.
+*)
+procedure SetupRML;
 var
   t: Integer;
 begin
@@ -60,11 +127,11 @@ begin
   RS_LoadGameTabs;
    
   t := GetTimeRunning - t;
-  WriteLn('[RML Successfully loaded in '+ IntToStr(t) +' ms]');
+  WriteLn('[RML] Successfully loaded in '+ IntToStr(t) +' ms');
 end;
 
 
-procedure FreeRS07;
+procedure FreeRML;
 begin
   RS_FreeOCR;
   RS_FreeLogin;
