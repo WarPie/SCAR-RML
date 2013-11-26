@@ -3,3 +3,240 @@
  Contains parts taken from MSSL (By Janilabo).
  All rights reserved. Copying must include this header.
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+function RS_SetBrightness(level: Integer): Boolean;
+var 
+  x,y,i:Integer;
+  TBA: TBoxArray;  
+  B : TBox;
+begin
+  TBA := [Box(605,223,617,234),Box(635,223,650,234),Box(667,223,680,234),Box(702,223,714,234)];
+  Result := False;  
+  if not(InRange(level, 0,3)) then Exit;
+  if RS_OpenTab(RS_Tab_Options) then
+  begin                     
+    B := TBA[level];
+    Result := CountColorTol(10172937, B.x1,B.y1,B.x2,B.y2,30) > 6;
+    if not(Result) then
+    begin
+      MMouseCircleEx(BoxCenter(B), 2, 5);
+      GetMousePos(x,y);
+      MouseClick2(Point(x,y), mbLeft);   
+      for i:=0 to 30 do
+      begin                
+        Result := CountColorTol(10172937, B.x1, B.y1,B.x2,B.y2, 30) > 6;
+        if (Result = True) then Break; 
+        Wait(50);
+      end;
+    end;
+  end; 
+end;
+
+
+function RS_SetMusicVolume(level: Integer): Boolean;
+var 
+  x,y,i:Integer;
+  TBA: TBoxArray;  
+  B : TBox;
+begin
+  TBA := [Box(605,260,617,270),Box(635,260,650,270),Box(667,260,680,270),Box(702,260,714,270)];
+  Result := False;  
+  if not(InRange(level, 0,3)) then Exit;
+  if RS_OpenTab(RS_Tab_Options) then
+  begin                     
+    B := TBA[level];
+    Result := CountColorTol(10172937, B.x1,B.y1,B.x2,B.y2,30) > 6;
+    if not(Result) then
+    begin
+      MMouseCircleEx(BoxCenter(B), 2, 5);
+      GetMousePos(x,y);
+      MouseClick2(Point(x,y), mbLeft);   
+      for i:=0 to 30 do
+      begin                
+        Result := CountColorTol(10172937, B.x1, B.y1,B.x2,B.y2, 30) > 6;
+        if (Result = True) then Break; 
+        Wait(50);
+      end;
+    end;
+  end; 
+end;
+
+
+function RS_SetSoundEffectVolume(level: Integer): Boolean;
+var 
+  x,y,i:Integer;
+  TBA: TBoxArray;  
+  B : TBox;
+begin
+  TBA := [Box(605,295,617,305),Box(635,295,650,305),Box(667,295,680,305),Box(702,295,714,305)];
+  Result := False;  
+  if not(InRange(level, 0,3)) then Exit;
+  if RS_OpenTab(RS_Tab_Options) then
+  begin                     
+    B := TBA[level];
+    Result := CountColorTol(10172937, B.x1,B.y1,B.x2,B.y2,30) > 6;
+    if not(Result) then
+    begin
+      MMouseCircleEx(BoxCenter(B), 2, 5);
+      GetMousePos(x,y);
+      MouseClick2(Point(x,y), mbLeft);   
+      for i:=0 to 30 do
+      begin                
+        Result := CountColorTol(10172937, B.x1, B.y1,B.x2,B.y2, 30) > 6;
+        if (Result = True) then Break; 
+        Wait(50);
+      end;
+    end;
+  end; 
+end;
+
+
+function RS_SetAreaSoundEffectVolume(level: Integer): Boolean;
+var 
+  x,y,i:Integer;
+  TBA: TBoxArray;  
+  B : TBox;
+begin
+  TBA := [Box(605,333,617,343),Box(635,333,650,343),Box(667,333,680,343),Box(702,333,714,343)];
+  Result := False;  
+  if not(InRange(level, 0,3)) then Exit;
+  if RS_OpenTab(RS_Tab_Options) then
+  begin                     
+    B := TBA[level];
+    Result := CountColorTol(10172937, B.x1,B.y1,B.x2,B.y2,30) > 6;
+    if not(Result) then
+    begin
+      MMouseCircleEx(BoxCenter(B), 2, 5);
+      GetMousePos(x,y);
+      MouseClick2(Point(x,y), mbLeft);   
+      for i:=0 to 30 do
+      begin                
+        Result := CountColorTol(10172937, B.x1, B.y1,B.x2,B.y2, 30) > 6;
+        if (Result = True) then Break; 
+        Wait(50);
+      end;
+    end;
+  end; 
+end;
+
+
+function RS_SetVolume(level: Integer): Boolean;
+begin
+  Result := RS_SetMusicVolume(level) and  
+            RS_SetSoundEffectVolume(level) and
+            RS_SetAreaSoundEffectVolume(level);
+end;
+
+
+//False for disable, true for enable.
+procedure RS_ToggleChatEffects(Enable:Boolean);
+var
+  B:Boolean; 
+  x,y:Integer;
+begin
+  if RS_OpenTab(RS_Tab_Options) then
+  begin    
+    case Enable of
+      True: 
+      begin  
+        B := CountColorTol(1974409, 602,363,637,397, 30) > 50;
+        if not(B) then
+        begin
+          MMouseCircleEx(Point(618,380), 4, 14);
+          GetMousePos(x,y);
+          MouseClick2(Point(x,y), mbLeft);   
+        end;
+      end;
+      False: 
+      begin  
+        B := not(CountColorTol(1974409, 602,363,637,397, 30) > 50);
+        if not(B) then
+        begin
+          MMouseCircleEx(Point(618,380), 4, 14);
+          GetMousePos(x,y);
+          MouseClick2(Point(x,y), mbLeft);   
+        end;
+      end;
+    end;
+  end;
+end;
+
+
+//False for disable, true for enable.
+procedure RS_ToggleSplitChat(Enable:Boolean);
+var
+  B:Boolean; 
+  x,y:Integer;
+begin
+  if RS_OpenTab(RS_Tab_Options) then
+  begin 
+    case Enable of
+      True: 
+      begin  
+        B := CountColorTol(1974409, 646,363,682,397, 30) > 50;
+        if not(B) then
+        begin
+          MMouseCircleEx(Point(664,380), 4, 14);
+          GetMousePos(x,y);
+          MouseClick2(Point(x,y), mbLeft);   
+        end;
+      end;
+      False: 
+      begin  
+        B := not(CountColorTol(1974409, 646,363,682,397, 30) > 50);
+        if not(B) then
+        begin
+          MMouseCircleEx(Point(664,380), 4, 14);
+          GetMousePos(x,y);
+          MouseClick2(Point(x,y), mbLeft);   
+        end;
+      end;
+    end;
+  end;
+end;
+
+
+//False for disable, true for enable.
+procedure RS_ToggleRun(Enable:Boolean);
+var
+  B:Boolean;
+  x,y:Integer;
+begin
+  if RS_OpenTab(RS_Tab_Options) then
+  begin 
+    case Enable of
+      True: 
+      begin  
+        B := CountColorTol(1974409, 623,412,660,447, 30) > 50;
+        if not(B) then
+        begin
+          MMouseCircleEx(Point(644,430), 4, 14);
+          GetMousePos(x,y);
+          MouseClick2(Point(x,y), mbLeft);   
+        end;
+      end;
+      False: 
+      begin  
+        B := not(CountColorTol(1974409, 623,412,660,447, 30) > 50);
+        if not(B) then
+        begin
+          MMouseCircleEx(Point(644,430), 4, 14);
+          GetMousePos(x,y);
+          MouseClick2(Point(x,y), mbLeft);   
+        end;
+      end;
+    end;
+  end;
+end;
+
+
+function RS_GetRunEnergy: Integer;
+var
+  Str: String;
+begin
+  if RS_OpenTab(RS_Tab_Options) then
+  begin 
+    Str := XT_GetTextAt(Box(625,433,647,446), RS_SmallFontXT, 1, 39167, 1, 5);
+    Result := StrToInt(GetNumbers(Str));
+  end;
+end;

@@ -40,9 +40,9 @@ end;
 (* 
   ...
 *)
-function RS_IsAnimating(Area:TBox; MinError:Integer): Boolean;
+function RS_IsAnimating(Area:TBox; MinPixelError:Integer): Boolean;
 begin
-  Result := RS_GetAvgPixError(Area, 500,100, True) > MinError;
+  Result := RS_GetAvgPixError(Area, 400,50, False) >= MinPixelError;
 end;
 
 
@@ -51,6 +51,7 @@ end;
 *)
 function RS_IsMoving: Boolean;
 begin
-  Result := RS_GetPixError(Box(MMCX-30, MMCY-30, MMCX+30, MMCY+30), 400, True) > 6; //6 percent error.
+  Result := RS_GetPixError(Box(MMCX-30, MMCY-30, MMCX+30, MMCY+30), 400, True) > 5; //5 percent error.
+  //Search for flag?
 end;
 

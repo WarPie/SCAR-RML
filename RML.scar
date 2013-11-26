@@ -18,6 +18,7 @@ var
 {$I Src/Globals.scar}
 {$I Src/Random.scar}
 {$I Src/Mouse.scar}
+{$I Src/Debug.scar}
 
 
 (*

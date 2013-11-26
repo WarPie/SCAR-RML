@@ -3,3 +3,44 @@
  Contains parts taken from MSSL (By Janilabo).
  All rights reserved. Copying must include this header.
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+procedure RS_ClickLogoutButton;
+var x,y:Integer;
+begin
+  MMouseOvalEx(Point(645,370), 3, 7, 14,40);
+  GetMousePos(x,y);
+  MouseClick2(Point(x,y), mbLeft);  
+end;
+
+
+function RS_Logout: Boolean;
+var
+  t,t1,t2,t3:Integer;
+  r1,r2,r3:Boolean;
+begin
+  if RS_OpenTab(RS_Tab_Logout) then
+  begin 
+    t := GetTimeRunning + 25000;
+    t1 := GetTimeRunning + 5000;
+    t2 := GetTimeRunning + 15000; 
+    t3 := GetTimeRunning + 24000;   
+    RS_ClickLogoutButton;
+    while (GetTimeRunning < t) do
+    begin
+      if RS_LoggedOut then
+       Break;
+      if ((t1 - GetTimeRunning) < 0) and not(r1) then begin
+        RS_ClickLogoutButton;     
+        r1 := True;
+      end;
+      if ((t2 - GetTimeRunning) < 0) and not(r2) then begin
+        RS_ClickLogoutButton;
+        r2 := True;
+      end;
+      if ((t3 - GetTimeRunning) < 0) and not(r3) then begin
+        RS_ClickLogoutButton;
+        r3 := True;
+      end;
+    end;
+  end;
+  Result :=  RS_LoggedOut;
+end;

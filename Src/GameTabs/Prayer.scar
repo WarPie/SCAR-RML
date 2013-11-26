@@ -3,3 +3,75 @@
  Contains parts taken from MSSL (By Janilabo).
  All rights reserved. Copying must include this header.
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+function RS_GetPrayerGrid: TBoxArray;
+var PrayerBounds:TBox;
+begin
+  PrayerBounds := Box(550,212,735,435);
+  Result := PartitionBoxEx(PrayerBounds, 6, 5, -6);
+end;
+
+function RS_GetPrayerIDBounds(ID: Integer): TBox;
+var TBA:TBoxArray;
+begin
+  TBA := RS_GetPrayerGrid;
+  if InRange(ID, 0, 26) then 
+    Result := TBA[ID];
+end;
+
+
+function RS_EnablePrayer(ID: Integer): Boolean;
+var
+  x,y,i: Integer;
+  Area: TBox;
+begin
+  Result := False;
+  if RS_OpenTab(RS_Tab_Prayer) then
+  begin     
+    Area := RS_GetPrayerIDBounds(ID);
+    if (Area.x1 <> 0) then
+    begin   
+      Result := CountColor(7451338, Area.x1, Area.y1,Area.x2,Area.x2) > 30;
+      if not(result) then
+      begin
+        MMouseCircleEx(BoxCenter(Area), 4, 10);
+        GetMousePos(x,y);
+        MouseClick2(Point(x,y), mbLeft);   
+        for i:=0 to 30 do
+        begin                
+          Result := CountColor(7451338, Area.x1, Area.y1,Area.x2,Area.x2) > 30;
+          if (Result = True) then Break; 
+          Wait(50);
+        end;
+      end;
+    end;
+  end;
+end;
+
+
+function RS_DisablePrayer(ID: Integer): Boolean;
+var
+  x,y,i: Integer;
+  Area: TBox;
+begin
+  Result := False;
+  if RS_OpenTab(RS_Tab_Prayer) then
+  begin     
+    Area := RS_GetPrayerIDBounds(ID);
+    if (Area.x1 <> 0) then
+    begin 
+      Result := not(CountColor(7451338, Area.x1, Area.y1,Area.x2,Area.x2) > 30); 
+      if not(Result) then
+      begin
+        MMouseCircleEx(BoxCenter(Area), 4, 10);
+        GetMousePos(x,y);
+        MouseClick2(Point(x,y), mbLeft);   
+        for i:=0 to 30 do
+        begin                
+          Result := not(CountColor(7451338, Area.x1, Area.y1,Area.x2,Area.x2) > 30);
+          if (Result = True) then Break; 
+          Wait(50);
+        end;
+      end;
+    end;
+  end;
+end;

@@ -1,0 +1,179 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+type
+  TDebugMethod = (DM_BBox, DM_Bounds, DM_CHull, DM_None);
+
+{*
+ Debug an array of TBox to a bitmap
+*}
+procedure DebugTBA(BMP:TSCARBitmap; TBA:TBoxArray; Adapt:Boolean);
+var 
+  W,H,i: Integer;
+  B : TBox;
+  TPA: TPointArray;
+begin
+  B := TBABounds(TBA); 
+  W := Max(B.x2 - B.x1 + 1, Bmp.Width);
+  H := Max(B.y2 - B.y1 + 1, Bmp.Height);
+  if Adapt then
+    if (W > Bmp.Width) or (H > Bmp.Height) then
+      BMP.SetSize(W,H); 
+
+  for i:=0 to High(TBA) do
+  begin                 
+    SetLength(TPA, 0);
+    TPA := XT_ConnectTPA([Point(TBA[i].x1, TBA[i].y1), Point(TBA[i].x2, TBA[i].y1), 
+            Point(TBA[i].x2, TBA[i].y2), Point(TBA[i].x1, TBA[i].y2)]);
+    XT_TPAFilterBounds(TPA, 0,0,W-1,H-1);
+    bmp.SetPixels(TPA, Random($FFFFFF));
+  end;
+  DebugBitmap(bmp);
+end;
+
+
+{*
+ Debug a TBox to a bitmap
+*}
+procedure DebugBox(BMP:TSCARBitmap; B:TBox; Adapt:Boolean);
+var 
+  W,H: Integer;
+  TPA: TPointArray;
+begin
+  W := Max(B.x2 - B.x1 + 1, Bmp.Width);
+  H := Max(B.y2 - B.y1 + 1, Bmp.Height);
+  if Adapt then
+    if (W > Bmp.Width) or (H > Bmp.Height) then
+      BMP.SetSize(W,H); 
+
+  TPA := [Point(B.x1, B.y1), Point(B.x2, B.y1), Point(B.x2, B.y2), Point(B.x1, B.y2)];
+  bmp.SetPixels(XT_ConnectTPA(TPA), Random($FFFFFF));
+  DebugBitmap(bmp);
+end;
+
+
+{*
+ Debug an Array of TPointArray
+*}
+procedure DebugATPAEx(BMP:TSCARBitmap; ATPA:T2DPointArray; Adapt:Boolean; Method:TDebugMethod);
+var 
+  W,H,i,Hi: Integer;
+  B : TBox;
+  TPA: TPointArray;
+begin
+  Hi := High(ATPA);
+  if Hi = -1 then Exit;
+  B := ATPABounds(ATPA); 
+  W := Max(B.x2 - B.x1 + 1, Bmp.Width);
+  H := Max(B.y2 - B.y1 + 1, Bmp.Height);
+  if Adapt then
+    if (W > Bmp.Width) or (H > Bmp.Height) then
+      BMP.SetSize(W,H);
+     
+  case Method of
+    DM_Bounds:
+      for i:=0 to Hi do
+      begin
+        B := TPABounds(ATPA[i]);
+        SetLength(TPA, 0);
+        TPA := XT_ConnectTPA([Point(B.x1, B.y1), Point(B.x2, B.y1), 
+                              Point(B.x2, B.y2), Point(B.x1, B.y2)]);
+        bmp.SetPixels(TPA, Random($FFFFFF));
+      end;
+    DM_BBox:
+      for i:=0 to Hi do
+      begin 
+        SetLength(TPA, 0);
+        TPA := XT_ConnectTPA(XT_TPABBox(ATPA[i]))
+        XT_TPAFilterBounds(TPA, 0,0,W-1,H-1);
+        bmp.SetPixels(TPA, Random($FFFFFF));
+      end;
+    DM_CHull:
+      for i:=0 to Hi do
+      begin  
+        SetLength(TPA, 0);
+        TPA := XT_ConnectTPA(XT_ConvexHull(ATPA[i]));
+        XT_TPAFilterBounds(TPA, 0,0,W-1,H-1);
+        bmp.SetPixels(TPA, Random($FFFFFF));
+      end;
+    DM_None:
+      for i:=0 to Hi do
+      begin
+        bmp.SetPixels(ATPA[i], Random($FFFFFF));
+      end;
+  end;
+  SetLength(TPA, 0);
+  DebugBitmap(bmp);
+end;
+
+{*
+ Debug a T2DPointArray
+*}
+procedure DebugATPA(BMP:TSCARBitmap; ATPA:T2DPointArray; Adapt:Boolean);
+begin
+  DebugATPAEx(BMP, ATPA, Adapt, DM_None);
+end;
+
+
+
+{*
+ Debug a TPointArray
+*}
+procedure DebugTPAEx(BMP:TSCARBitmap; TPA:TPointArray; Adapt:Boolean; Method:TDebugMethod);
+var 
+  W,H,Hi: Integer;
+  B : TBox;
+  TPA2: TPointArray;
+begin
+  Hi := High(TPA);
+  if Hi = -1 then Exit;
+  B := TPABounds(TPA); 
+  W := Max(B.x2 - B.x1 + 1, Bmp.Width);
+  H := Max(B.y2 - B.y1 + 1, Bmp.Height);
+  if Adapt then
+    if (W > Bmp.Width) or (H > Bmp.Height) then
+      BMP.SetSize(W,H);
+     
+  case Method of
+    DM_Bounds:
+      begin
+        B := TPABounds(TPA);
+        TPA2 := XT_ConnectTPA([Point(B.x1, B.y1), Point(B.x2, B.y1), 
+                               Point(B.x2, B.y2), Point(B.x1, B.y2)]);
+        XT_TPAFilterBounds(TPA2, 0,0,W-1,H-1);
+        bmp.SetPixels(TPA2, Random($FFFFFF));
+      end;
+    DM_BBox:
+      begin
+        TPA2 := XT_ConnectTPA(XT_TPABBox(TPA))
+        XT_TPAFilterBounds(TPA2, 0,0,W-1,H-1);
+        bmp.SetPixels(TPA2, Random($FFFFFF));
+      end;
+    DM_CHull:
+      begin  
+        SetLength(TPA2, 0);
+        TPA2 := XT_ConnectTPA(XT_ConvexHull(TPA));
+        XT_TPAFilterBounds(TPA2, 0,0,W-1,H-1);
+        bmp.SetPixels(TPA2, Random($FFFFFF));
+      end;
+    DM_None:
+      begin   
+        TPA2 := CopyTPA(TPA);
+        XT_TPAFilterBounds(TPA2, 0,0,W-1,H-1);
+        bmp.SetPixels(TPA2, Random($FFFFFF));
+      end;
+  end;
+  SetLength(TPA2, 0);
+  DebugBitmap(bmp);
+end;
+
+
+{*
+ Debug a TPointArray
+*}
+procedure DebugTPA(BMP:TSCARBitmap; TPA:TPointArray; Adapt:Boolean);
+begin
+  DebugTPAEx(BMP, TPA, Adapt, DM_None);
+end;

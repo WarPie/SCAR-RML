@@ -49,7 +49,16 @@ begin
   Result := True;
   if not(RS_InFight) then Exit;
   TPA := RS_GetFightBarTPA(Box(200, 90, 310, 210));
-  Result := (Length(XT_ClusterTPA(TPA, 1,True)) = 1);
+  Result := (Length(XT_ClusterTPA(TPA, 1, True)) = 1);
+end;
+
+
+function RS_GetHPPercent: Integer;
+var L,R: Integer;
+begin
+  Result := -1;
+  if RS_GetSkillData(RS_Skill_HP, L, R) then
+    Result := Trunc((L / R) * 100);
 end;
 
 

@@ -27,7 +27,7 @@ const
   RS_Skill_Slayer    = 19;
   RS_Skill_Farming   = 20;
   RS_Skill_Construction = 21;
-  RS_Skill_Hunter    = 1;
+  RS_Skill_Hunter    = 22;
   
 
 
@@ -83,12 +83,13 @@ var
 begin
   if RS_OpenTab(RS_Tab_Stats) then
   begin
+    if not(InRange(ID, 0,23)) then Exit;
     Area := __IDToSkillBox(ID);
     Skill := XT_GetTextAtEx(Area, [RS_StatFontXT], 1,1, [clYellow], 1,10,1,'');
-    if (ID < 23) and (Length(Skill)>=1) then 
+    if Length(Skill) >= 1 then 
     begin
       TSA := Explode(#13#10, Skill);
-      Result := StrToInt(TSA[0]);
+      Result := StrToInt(GetNumbers(TSA[0]));
     end;
   end;
 end;
@@ -105,12 +106,13 @@ var
 begin
   if RS_OpenTab(RS_Tab_Stats) then
   begin
+    if not(InRange(ID, 0,23)) then Exit;
     Area := __IDToSkillBox(ID);
     Skill := XT_GetTextAtEx(Area, [RS_StatFontXT], 1,1, [clYellow], 1,10,1,'');
-    if (ID < 23) and (Length(Skill)>=1) then 
+    if Length(Skill) >= 1 then 
     begin
       TSA := Explode(#13#10, Skill);
-      Result := StrToInt(TSA[1]);
+      Result := StrToInt(GetNumbers(TSA[1]));
     end;
   end;
 end;
@@ -127,13 +129,14 @@ var
 begin
   if RS_OpenTab(RS_Tab_Stats) then
   begin
+    if not(InRange(ID, 0,23)) then Exit;
     Area := __IDToSkillBox(ID);
-    Skill := XT_GetTextAtEx(Area, [RS_StatFontXT], 1,1, [clYellow], 1,10,1,'');
-    if (ID < 23) and (Length(Skill)>=1) then 
+    Skill := XT_GetTextAtEx(Area, [RS_StatFontXT], 0,0, [clYellow], 1,10,0,'');
+    if Length(Skill) >= 1 then
     begin
       TSA := Explode(#13#10, Skill);
-      Level := StrToInt(TSA[0]); 
-      Remains := StrToInt(TSA[1]);
+      Level := StrToInt(GetNumbers(TSA[0])); 
+      Remains := StrToInt(GetNumbers(TSA[1]));
       Result := True;
     end;  
   end;
@@ -149,8 +152,9 @@ var
 begin
   if RS_OpenTab(RS_Tab_Stats) then
   begin
+    if not(InRange(ID, 0,23)) then Exit;
     Area := __IDToSkillBox(ID);
-    MMouseCircle(BoxCenter(Area), 6);
+    MMouseCircle(BoxCenter(Area), 5);
   end;
 end;
 

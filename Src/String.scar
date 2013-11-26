@@ -68,6 +68,16 @@ begin
 end;
 
 
+function TSAContains(SubStr:String; Subjects:TStrArray): Boolean;
+var i:Integer;
+begin
+  Result := True;
+  for i:=0 to High(Subjects) do
+    if (Pos(SubStr, Subjects[i]) <> 0) then Exit;
+  Result := False;
+end;
+
+
 
 
 

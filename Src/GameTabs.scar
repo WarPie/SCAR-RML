@@ -54,27 +54,30 @@ end;
 
 function RS_OpenTab(ID:Integer): Boolean;
 var
-  x,y,t:Integer;
+  t,i:Integer;
   B:TBox;
 begin
   Result := False;
   if (ID <= 13) then  
   begin
     B := __IDToTabBox(ID); 
-    if FindColorsTol(x,y, [1910385,1054012,790059], B.x1,b.y1,b.x2,b.y2, 5) then 
+    if (CountColorsTol([1910385,1054012,790059], B.x1,b.y1,b.x2,b.y2, 5) > 20) then 
     begin 
       Result := True;
       Exit;
     end; 
-    MMouseClick(BoxCenter(B), 4, 12, mbLeft); 
-    t := GetTimeRunning + 2000;
-    while GetTimeRunning < t do
+    for i:=0 to 2 do
     begin
-      if FindColorsTol(x,y, [1910385,1054012,790059], B.x1,b.y1,b.x2,b.y2, 5) then 
-      begin 
-        Result := True;
-        Exit;
-      end; 
+      MMouseClick(BoxCenter(B), 4, 12, mbLeft); 
+      t := GetTimeRunning + 1500;
+      while GetTimeRunning < t do
+      begin
+        if (CountColorsTol([1910385,1054012,790059], B.x1,b.y1,b.x2,b.y2, 5) > 20) then 
+        begin 
+          Result := True;
+          Exit;
+        end; 
+      end;
     end;
   end;
 end;
@@ -85,14 +88,14 @@ end;
 *}
 function RS_GetOpenTab: Integer;
 var
-  I,x,y:Integer;
+  i:Integer;
   B:TBox;
 begin
   Result := -1;
   for i:=0 to 13 do
   begin
     B := __IDToTabBox(I); 
-    if FindColorsTol(x,y, [1910385,1054012,790059], B.x1,b.y1,b.x2,b.y2, 5) then 
+    if (CountColorsTol([1910385,1054012,790059], B.x1,b.y1,b.x2,b.y2, 5) > 20) then 
     begin 
       Result := i;
       Exit;

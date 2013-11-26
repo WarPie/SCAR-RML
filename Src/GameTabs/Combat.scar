@@ -3,3 +3,192 @@
  Contains parts taken from MSSL (By Janilabo).
  All rights reserved. Copying must include this header.
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+function RS_GetFightStyleGrid: TBoxArray;
+var PrayerBounds:TBox;
+begin
+  PrayerBounds := Box(562,245,726,352);
+  Result := PartitionBoxEx(PrayerBounds, 2, 2, -5);
+end;
+
+{*
+ ...
+*}
+function RS_GetFightStyles: TStrArray;
+var
+  i,j:Integer;
+  Str:String;
+  TBA:TBoxArray;
+begin
+  if RS_OpenTab(RS_Tab_Combat) then
+  begin
+    SetLength(Result, 4);
+    TBA := RS_GetFightStyleGrid;
+    for i:=0 to 3 do
+    begin 
+      Str := TrimOthers(XT_GetTextAtEx(TBA[i], [RS_StatFontXT], 1,1, [2070783], 1,10,1,''));
+      if Str<>'' then
+      begin
+        Result[j] := Str;
+        Inc(j); 
+      end; 
+    end;
+    SetLength(Result, j);  
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_FightStyleAvailable(Style: String): Boolean;
+begin
+  Result := TSAContains(Style, RS_GetFightStyles);
+end;
+
+
+{*
+ ...
+*}
+function RS_GetFightStyle: String;
+var
+  i:Integer;
+  TSA: TStrArray;
+  TBA: TBoxArray;
+begin
+  TSA := RS_GetFightStyles;
+  TBA := RS_GetFightStyleGrid; 
+  for i:=0 to High(TSA) do
+  begin                  
+    if CountColorTol(1908609, TBA[i].x1,TBA[i].y1,TBA[i].x2,TBA[i].y2,30) > 100 then
+    begin    
+      Result := TrimOthers(TSA[i]);
+      Exit;  
+    end;
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_SetFightStyle(Style: String): Boolean;
+var
+  i,x,y:Integer;
+  TSA: TStrArray;
+  TBA: TBoxArray;
+begin 
+  Result := False;
+  if (Pos(Lowercase(Style), Lowercase(RS_GetFightStyle)) <> 0) then
+  begin
+    Result := True;
+    Exit;
+  end; 
+  TSA := RS_GetFightStyles; 
+  for i:=0 to High(TSA) do
+    if (Pos(Style, TSA[i]) <> 0) then
+    begin
+      TBA := RS_GetFightStyleGrid;
+      MMouseOvalEx(BoxCenter(TBA[i]), 7,5,22,15);
+      GetMousePos(x,y);
+      MouseClick2(Point(x,y), mbLeft);   
+      Result := True;
+      Exit;  
+    end;
+end;
+
+
+{*
+ ...
+*}
+function RS_GetFightStyleID: Integer;
+var
+  i:Integer;
+  TSA: TStrArray;
+  TBA: TBoxArray;
+begin
+  TBA := RS_GetFightStyleGrid; 
+  TSA := RS_GetFightStyles; 
+  for i:=0 to High(TSA) do
+  begin                  
+    if CountColorTol(1908609, TBA[i].x1,TBA[i].y1,TBA[i].x2,TBA[i].y2,30) > 100 then
+    begin    
+      Result := i;
+      Exit;  
+    end;
+  end;
+end;
+
+{*
+ ...
+*}
+function RS_SetFightStyleID(StyleID: Integer): Boolean;
+var
+  x,y:Integer;
+  TSA: TStrArray;
+  TBA: TBoxArray;
+begin 
+  Result := False;
+  if RS_GetFightStyleID = StyleID then
+  begin
+    Result := True;
+    Exit;
+  end; 
+  TSA := RS_GetFightStyles; 
+  if InRange(StyleID, 0, High(TSA)) then
+  begin
+    TBA := RS_GetFightStyleGrid;
+    MMouseOvalEx(BoxCenter(TBA[StyleID]), 7,5,22,15);
+    GetMousePos(x,y);
+    MouseClick2(Point(x,y), mbLeft);   
+    Result := True;
+    Exit;  
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_GetCombatLevel: Integer;
+var  
+  Str:string;
+begin
+  if RS_OpenTab(RS_Tab_Combat) then
+  begin
+    Str := XT_GetTextAtEx(Box(590,229,690,241), [RS_StatFontXT], 1,1, [2070783], 1,10,1,'');
+    if Length(Str) >= 8 then
+      Result := StrToInt(GetNumbers(Str)); 
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_GetCombatWeapon: String;
+var  
+  Str:string;
+begin
+  if RS_OpenTab(RS_Tab_Combat) then
+  begin
+    Str := XT_GetTextAtEx(Box(555,208,730,229), [RS_NPCFontXT], 1,1, [2070783], 1,10,1,'');
+    if Length(Str) >= 1 then
+      Result := Str; 
+  end;
+end;
+
+
+{*
+ ...
+*}
+function RS_IsCombatWeapon(Weapon:String): Boolean;
+var  
+  Str:string;
+begin
+  if RS_OpenTab(RS_Tab_Combat) then
+  begin
+    Str := XT_GetTextAtEx(Box(555,208,730,229), [RS_NPCFontXT], 1,1, [2070783], 1,10,1,'');
+    if (Pos(Lowercase(Weapon), Lowercase(Str)) <> 0) then
+      Result := True; 
+  end;
+end;
