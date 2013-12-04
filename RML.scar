@@ -12,6 +12,7 @@ var
  Core rutines that may be needed just about everywhere.                                           
 *)
 {$I SCARExt.scar}
+{$I Src/Bitmap.scar}
 {$I Src/Math.scar}
 {$I Src/String.scar}
 {$I Src/Box.scar}

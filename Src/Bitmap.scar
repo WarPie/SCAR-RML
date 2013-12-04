@@ -1,0 +1,73 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+function FindTemplate(var x,y:Integer; Ptrn:TSCARBitmap; Area:TBox; Algorithm:AnsiString; Tolerance,Scale:Extended): Boolean;
+var
+  Img,Sub,Tmp: AnsiString;
+  mat: T2DIntArray;    
+  pmin,pmax: TPoint;
+  vmin,vmax: Integer;  
+  A,B: TSCARBitmap;
+  TempPath: AnsiString;
+begin
+  Result := False;
+  x := -1;
+  y := -1;  
+  Algorithm := UpperCase(Algorithm);
+  if not(Algorithm = 'CCOEFF') or
+     not(Algorithm = 'CCORR') or
+     not(Algorithm = 'SQDIFF') then
+      Algorithm := 'CCOEFF';
+  
+  TempPath := IncludesPath + 'RML\temp\';
+  MT_SetPath(IncludesPath +'RML\utils\MatchTemplate.exe');
+  Img := TempPath + 'img.bmp';
+  Sub := TempPath + 'sub.bmp'; 
+  Tmp := TempPath + 'out.bmp'; 
+  
+  A := XT_ClientBMP(Area.x1, Area.y1, Area.x2, Area.y2);
+  B := Ptrn.Clone;
+  if (Scale <> 1) then
+  begin
+    B.ResizeEx(Round(B.width * scale),Round(B.height * scale), brBilinear);
+    A.ResizeEx(Round(A.width * scale),Round(A.height * scale), brBilinear);
+  end;  
+  A.SaveToBMP(Img);
+  B.SaveToBMP(Sub);
+   
+  MT_MatchTemplate('"'+Img+'"', '"'+Sub+'"', Algorithm, '"'+Tmp+'"');
+  mat := XT_LoadBmpToMatrix(Tmp,'bmp');
+  XT_MatrixMinMax(Mat,pmin,pmax,vmin,vmax);
+  
+  if (Algorithm = 'SQDIFF') then
+  begin   
+    ColorToRGB(vmin,vmin,vmin,vmin);
+    if vmin < (0 + Tolerance) then
+    begin
+      Result := True;
+      x := round(pmin.x * (1 / scale));
+      y := round(pmin.y * (1 / scale));
+    end;
+  end else
+  begin 
+    ColorToRGB(vmax,vmax,vmax,vmax);
+    if vmax > (255 - Tolerance) then
+    begin  
+      Result := True;
+      x := round(pmax.x * (1 / scale));
+      y := round(pmax.y * (1 / scale));
+    end;
+  end;
+  SetLength(mat, 0); 
+  A.Free; 
+  B.Free; 
+end;
+
+
+
+
+
+
+
