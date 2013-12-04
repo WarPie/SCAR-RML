@@ -77,7 +77,7 @@ begin
     try
       id := Ord(Text[i]);
       TPA := CopyTPA(Plot.Chars[id]);
-      XT_MoveTPA(TPA, Pos.x+x, Pos.y);
+      OffsetTPA(TPA, Pos.x+x, Pos.y);
       Result := XT_UniteTPA(Result, TPA, False);
       x := x + Plot.CharSize[id].x + 1;
     except

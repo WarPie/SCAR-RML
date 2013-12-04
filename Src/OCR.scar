@@ -5,37 +5,17 @@
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
 
 (* Colors as seen in the uptext *)
-const
-  clTextBlack  = $000000;
-  clTextWhite  = $E3E3E3;
-  clTextWhite2 = $D6D6D6;
-  clTextRed    = $1111EE;
-  clTextGreen  = $04CF05;
-  clTextRedS   = $0412E9;
-  clTextBlue   = $EE1111;
-  clTextYellow = $0AE6E6;
-  clTextOrange = $1478E3;
-  clTextOrange2= $3478D2;
-  clTextCyan   = $E6E619; 
-  clTextCyan2  = $C8CA03;
-  clTextPurple = $E60069;
-  clTextPink   = $E600c8;  
-  clTextGreen1 = $09CE10;
-  clTextGreen2 = $02CE35; 
-  clTextGreen3 = $00C87F;                    
-  
 var
   RS_MainFont, RS_NPCFont, RS_OptionFont, RS_SmallFont:Integer; 
-  RS_SmallFont2, RS_StatFont, RS_UpFont2, RS_UpFont: Integer; 
+  RS_SmallFont2, RS_StatFont, RS_UpFont: Integer; 
 
   RS_MainFontXT, RS_NPCFontXT, RS_OptionFontXT, RS_SmallFontXT: TChars; 
-  RS_SmallFont2XT, RS_StatFontXT, RS_UpFont2XT, RS_UpFontXT: TChars; 
-  
-  clTextEnsurance: TIntArray;
+  RS_SmallFont2XT, RS_StatFontXT, RS_UpFontXT: TChars; 
+  RS_UpFont2: TCharsN;
      
 var
   __bmpChooseOption: TSCARBitmap;
-  
+
   
 (*   
   Load all the needed fonts in to memory                
@@ -48,7 +28,6 @@ begin
   RS_SmallFont  := LoadChars2(FontDir + 'SmallFont\');
   RS_SmallFont2 := LoadChars2(FontDir + 'SmallFont2\');
   RS_StatFont   := LoadChars2(FontDir + 'StatFont\');
-  RS_UpFont2    := LoadChars2(FontDir + 'UpFontShadow\');
   RS_UpFont     := LoadChars2(FontDir + 'UpFont\');  
   
   RS_MainFontXT   := XT_LoadFont(FontDir + 'MainFont\');
@@ -57,14 +36,9 @@ begin
   RS_SmallFontXT  := XT_LoadFont(FontDir + 'SmallFont\');
   RS_SmallFont2XT := XT_LoadFont(FontDir + 'SmallFont2\');
   RS_StatFontXT   := XT_LoadFont(FontDir + 'StatFont\');
-  RS_UpFont2XT    := XT_LoadFont(FontDir + 'UpFontShadow\');
   RS_UpFontXT     := XT_LoadFont(FontDir + 'UpFont\'); 
   
-  clTextEnsurance := [clTextWhite2, clTextYellow, clTextCyan, 
-                      clTextPurple, clTextRed, clTextBlue, 
-                      clTextOrange, clTextOrange2, clTextRedS, 
-                      clTextCyan2,  clTextGreen, clTextGreen1, 
-                      clTextGreen2];   
+  RS_UpFont2      := RS_LoadFont(FontDir + 'UpFontShadow\');   
                       
   __bmpChooseOption := TSCARBitmap.Create('deNrjZhBiiA1xx48YRgYg6GtkKaxqkAUHSgH9AwoTAQAdzy6e');
 end;
@@ -81,7 +55,6 @@ begin
   FreeChars2(RS_SmallFont);
   FreeChars2(RS_SmallFont2);
   FreeChars2(RS_StatFont);
-  FreeChars2(RS_UpFont2);
   FreeChars2(RS_UpFont);
    
   XT_FreeFont(RS_MainFontXT);
@@ -90,106 +63,51 @@ begin
   XT_FreeFont(RS_SmallFontXT);
   XT_FreeFont(RS_SmallFont2XT);
   XT_FreeFont(RS_StatFontXT);
-  XT_FreeFont(RS_UpFont2XT);
   XT_FreeFont(RS_UpFontXT);
   
-  SetLength(clTextEnsurance, 0);   
+  RS_FreeFont(RS_UpFont2);
+  
   __bmpChooseOption.Free;
 end;
 
 
 (*   
- Pretty dynamic solution for uptext, does not strugle as much with white colors.
- I think it's quite reliable.
+ Simple function to get the uptext (Text in the Left-Top corner in RS) 
 *)
-function RS_GetUpText: String;
+function RS_GetTextAtEx(x,y, width: Integer; Font:TCharsN; EndStr:String): String;
 var 
-  TPA: TPointArray;
-  ATPA: T2DPointArray;
-  Mat,MatT: T2DIntArray;
-  i,v,width: Integer;
-  Mdf:Extended; 
-  TSA: TStrArray;
+  Client: T2DIntArray;
+  Height,i: Integer;
+  
 begin
-  Width := 450;
-  Mat := XT_Bmp2Matrix(XT_ClientBMP(8,7,Width,23), False);
-  Mat := XT_ImBrighten(Mat, -0.55); 
-  SetLength(TSA, 20);
-  Mdf := 0.3; 
-
-  for i:=0 to High(TSA) do
+  Height := Font[32].Height;
+  Client := XT_Bmp2Matrix(XT_ClientBMP(x,y,x+width,y+Height), True);
+  
+  //OCR 
+  Result := RS_ReadText(Client, Font, 0,200, EndStr);
+  //Strip noise chars from start and end.
+  for i:=0 to 1 do
   begin
-    MatT := XT_ImEnhance(Mat, 255, Mdf + (i*0.02));
-    MatT := XT_ImThreshold(MatT, 1, 0, 255, False);   
-    XT_ImFindColorTolEx(MatT, TPA, 255, 1);
-    ATPA := XT_ClusterTPAEx(TPA, 1,2, True);
-    XT_ATPAFilter(ATPA, 5, 2,1,15,15, False);
-    TPA := MergeATPA(ATPA);
-    TSA[i] := XT_GetTextFromTPA(TPA, Width, [RS_UpFontXT], 1, 2, 8, 1, '');
+    Result := TrimEx('.', Result);   
+    Result := TrimEx(',', Result);
+    Result := TrimEx(':', Result);
+    Result := TrimEx('''', Result);
   end;
-  v := 0;
-  for i:=0 to High(TSA) do 
-    if Length(TrimOthers(TSA[i])) > Length(TrimOthers(TSA[v])) then
-      v := i; 
-  TSA := Explode(#13, TSA[v]);    
-  Result := TSA[0];
-  SetLength(ATPA, 0);
-  SetLengthTPA(TPA, 0);
-  SetLengthATIA(MatT, 0);
-  SetLengthATIA(Mat, 0);
 end;
-
 
 (*   
- Simple function to get the uptext (Text in the Left-Top corner in RS)
- Allows for modifiers. 
+ ...
 *)
-function RS_GetUpTextOLD(ThreshMod:Byte; Tolerance:Integer): String;
-var 
-  TPA,TPA2: TPointArray;
-  ATPA: T2DPointArray;
-  bmp: TSCARBitmap; 
-  client: TSCARClient;
-  Mat: T2DIntArray;
+function RS_GetUpText: String;
 begin
-  bmp := TSCARBitmap.Create('');
-  bmp.SetSize(470, 20);
-  Mat := XT_Bmp2Matrix(XT_ClientBMP(8,7,470,23), False); 
-  //Will be better if I made: XT_ImThresholdAdpativeBlocks
-  Mat := XT_ImThresholdAdaptive(Mat,0,255,False,TM_Mean,ThreshMod);
-  XT_BmpSetData(bmp, Mat, True); 
-  
-  //Ensureance
-  ColorToleranceSpeed(1);
-  FindColorsTolEx(TPA, clTextEnsurance, 8,7,470,26, Tolerance); 
-
-  OffsetTPA(TPA, -8,-7); 
-  ATPA := XT_ClusterTPAEx(TPA, 1,3, True);
-  XT_ATPAFilter(ATPA,10, 2,6,12,12, False);
-  TPA := MergeATPA(ATPA);
-  
-  //Processing
-  Client := SetClient(TSCARBitmapClient.Create(bmp));
-  FindColorTolEx(TPA2, 255, 0,0,469,19, 1);
-  ATPA := XT_ClusterTPAEx(TPA2, 1,3, True);
-  XT_ATPAFilter(ATPA, 10, 2,6,12,12, False);
-  TPA2 := MergeATPA(ATPA);
-  
-  TPA := XT_UniteTPA(TPA,TPA2, False);  
-  ATPA := XT_ClusterTPAEx(TPA, 1,1, True);
-  XT_ATPAFilter(ATPA, 1, 2,1,15,15, False);
-  TPA := MergeATPA(ATPA);
-  
-  bmp.Clear(0);
-  bmp.SetPixels(TPA, clRed); 
-  
-  //OCR     
-  Result := XT_GetTextAtEx(Box(0,0,469,19), [RS_UpFontXT], 1, 2, [clRed], 1, 10, 1, '');
-  //GetTextAtEx(0, 0, 25, RS_UpFont, False, False, 0, 3, clRed, 255, True, tr_AllChars);
-  SetClient(client).Free;
-  Result := TrimEx(#13#10, Result);
+  Result := RS_GetTextAtEx(7,7,500,RS_UpFont2, 'mo*e opt**ns');
 end;
 
+
+function RS_GetTextAt(x,y,width:Integer; Font:TCharsN): String;
+begin
+  Result := RS_GetTextAtEx(x,y,width,Font, '');
+end;
 
 
 (*   
@@ -197,7 +115,7 @@ end;
 *)
 function RS_IsUpText(Text: String): Boolean;
 begin
-  Result := StrContains(Text, RS_GetUpText);
+  Result := StrContains(Text, RS_GetTextAtEx(7,7,500,RS_UpFont2, text));
 end;
 
 
@@ -218,6 +136,14 @@ begin
   Result := StrContainsAll(TextArr, RS_GetUpText);
 end;
 
+
+(*   
+ Check if the uptext contains all of your strings.. 
+*)
+function RS_IsUpTextEx(TextPtrn: String): Boolean;
+begin
+  Result := StrMatches(TextPtrn, RS_GetUpText, '*', True) <> '';
+end;
 
 
 ////----------------------------------------------------------------------------
@@ -245,6 +171,21 @@ begin
   end;
   RowID := RowID * 14;
   Result := XT_GetTextAtEx(Box(8,445-RowID,495,458-RowID), [RS_SmallFontXT], 1, 1, [clBlack, clBlue], 1,10,1,'');
+end;
+
+
+(*   
+ Returns the chat message. 
+*)
+function RS_GetChatMsgEx(RowID:Integer; var User:String): String;
+begin
+  if RowID > 7 then begin 
+    WriteLn('[WARNING] RowID out of range: ' + IntToStr(RowID) +'.');
+    Exit;
+  end;
+  RowID := RowID * 14;
+  User := XT_GetTextAtEx(Box(8,445-RowID,150,458-RowID), [RS_SmallFontXT], 1, 1, [clBlack], 1,10,1,'');
+  Result := XT_GetTextAtEx(Box(8,445-RowID,495,458-RowID), [RS_SmallFontXT], 1, 1, [clBlue], 1,10,1,'');
 end;
 
 
@@ -589,7 +530,7 @@ end;
 (*   
  Look for text on the RS mainscreen.
 *)
-function RS_GetScreenText(Area:TBox; TextColors:TintArray; ColorTol: Integer): TStrArray;
+function RS_GetScreenText(Area:TBox; TextColors:TIntArray; ColorTol: Integer): TStrArray;
 var
   i:Integer;
   Text:String;

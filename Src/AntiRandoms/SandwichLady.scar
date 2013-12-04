@@ -1,0 +1,256 @@
+{=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
+ Copyright (c) 2013, Jarl Holta (slacky).
+ Contains parts taken from MSSL (By Janilabo).
+ All rights reserved. Copying must include this header.
+[=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+
+var
+  _SL_TimeOut: Integer;
+  _SL_SandwichID: Integer;
+  
+procedure SL_ClickContinue;
+var x,y:Integer;
+begin
+  MoveMouse(305+RandomRange(-40,40), 450+RandomRange(-2,2));
+  GetMousePos(x,y);
+  MouseClick2(Point(x,y), mbLeft);
+end;
+
+
+function SL_StopSearch: boolean;
+begin
+  Result := False;
+  if (CountColor(39423, 490, 10, 513, 32) < 5) then
+    Result := True;
+  if ((GetTimeRunning - _SL_TimeOut) > 35000) then
+    Result := True;
+end;
+
+
+function SL_Detect: Boolean;
+var
+  TPA:TPointArray;
+  Obj: TRSObject;
+  i: Integer;  
+begin
+  Obj := RS_NewObject([16645373,10857684,7765935], [20], 2, 100, Box(10,10,60,60), 3,5, ['lady', 'Sandwich']);
+  Obj.X1 := 225;
+  Obj.Y1 := 90; 
+  Obj.X2 := 330;
+  Obj.Y2 := 225; 
+  if RS_FindObjectTPA(TPA, Obj) then 
+  begin
+    for i:=0 to High(TPA) do
+    begin
+      if not(RS_OpenChooseOption(TPA[i])) then Continue;
+      if RS_ChooseOptionAny(['Sandwich lady', 'Talk-to Sandw']) then
+      begin
+        Result := True;
+        Break;
+      end else
+        RS_CloseChooseOption;
+    end;
+  end;
+end;
+
+
+function SL_GetSandwichID(var ID: Integer): Boolean;
+var 
+  i: Integer;
+  Text: String;
+  Sandwiches: TStrArray;
+begin
+  Result := True;
+  Text := XT_GetTextAtEx(Box(124,385,507,443), [RS_NPCFontXT], 1, 2, [clBlack], 1, 10, 1, '');
+  Text := Lowercase(Text);
+  Sandwiches := ['baguette', 'chocolate bar', 'kebab', 'pie', 'bread roll', 'triangle sandwich','square sandwich'];
+  for i:=0 to High(Sandwiches) do
+    if StrContains(Sandwiches[i], Text) then
+    begin
+      ID := 1; 
+      Result := True;
+      Exit;
+    end;
+  Result := False;
+end;
+
+
+(**
+ * Author: DannyRS
+ * Last modified 15/03/2013 By DannyRS
+ * Description: Selects a sandwich number 0-6 (left-right)
+ *)
+function SL_Select(SandwichNumber: integer): boolean;
+var
+  SPoint: tpoint;
+begin
+  Result := False;
+  SPoint := Point(-1,-1);
+  case SandwichNumber of
+    0: SPoint := Point(155, 120);
+    1: SPoint := Point(260, 122);
+    2: SPoint := Point(365, 132);
+    3: SPoint := Point(110, 210);
+    4: SPoint := Point(205, 219);
+    5: SPoint := Point(315, 213);
+    6: SPoint := Point(395, 217);
+  end;
+  if (SPoint.X < 0) then
+  begin
+    WriteLn('[RML] Invalid sandwich ID');
+    Exit;
+  end;
+  if (SL_StopSearch) then Exit;
+  MMouseCircle(SPoint, 3);
+  GetMousePos(SPoint.x, SPoint.y);
+  MouseClick2(SPoint,mbLeft);
+  Result := True;
+end;
+
+
+(*
+ Author: DannyRS
+ Modified by Slacky
+ Description: Returns TBox area of all the sandwiches
+*)
+function SL_SandwichSearchBox(BoxNumber: integer): tbox;
+begin
+  case BoxNumber of
+    0: Result := Box(100,80,205,155);
+    1: Result := Box(215,80,305,160);
+    2: Result := Box(320,80,410,163);
+    3: Result := Box(71,170,160,255);
+    4: Result := Box(165,175,255,260);
+    5: Result := Box(260,175,355,265);
+    6: Result := Box(360,175,435,270);
+  end;
+end;
+
+(*
+ Author: DannyRS
+ Modified by Slacky
+ Description: Finds the correct box number to click
+*)
+function SL_FindSandwichBoxNumber: integer;
+var
+  tmpCTS, i, SColor, STol, MinSSize: integer;
+  tmpHM, tmpSM, SHM, SSM: extended;
+  SB: tbox;
+  SWTPA: tpointarray;
+begin
+  Result := -1;
+  WaitG(1000, 100); //Wait for window?
+  tmpCTS := GetColorToleranceSpeed;
+  GetColorspeed2Modifiers(tmpHM, tmpSM);
+  
+  case _SL_SandwichID of
+    0:begin
+        SColor:=2910074;
+        STol:=10;
+        SHM:=0.03;
+        SSM:=0.08;
+        MinSSize:=35;
+      end;
+    1:begin
+        SColor:=2375783;
+        STol:=7;
+        SHM:=0.03;
+        SSM:=0.24;
+        MinSSize:=120;
+      end;
+    2:begin
+        SColor:=1276942;
+        STol:=3;
+        SHM:=0.08;
+        SSM:=0.59;
+        MinSSize:=25;
+      end;
+    3:begin
+        SColor:=5395289;
+        STol:=24;
+        SHM:=0.10;
+        SSM:=0.08;
+        MinSSize:=150;
+      end;
+    4:begin
+        SColor:=1280167;
+        STol:=9;
+        SHM:=0.01;
+        SSM:=0.24;
+        MinSSize:=110;
+      end;
+    5:begin
+        SColor:=2276602;
+        STol:=2;
+        SHM:=0.05;
+        SSM:=0.81;
+        MinSSize:=25;
+      end;
+    6:begin
+        SColor:=5143435;
+        STol:=6;
+        SHM:=0.01;
+        SSM:=0.05;
+        MinSSize:=110;
+      end;
+    else
+    begin WriteLn('[RML] Invalid sandwich name found'); Exit; end;
+  end;
+
+  WriteLn('[RML] Scanning for sandwich');
+  ColorToleranceSpeed(2);
+  SetColorspeed2Modifiers(SHM, SSM);
+  repeat
+    for i:=0 to 6 do
+    begin
+      SB := SL_SandwichSearchBox(i);
+      FindColorTolEx(SWTPA, SColor, SB.X1, SB.Y1, SB.X2, SB.Y2, STol);
+      if (Length(SWTPA) < MinSSize) then Continue;
+      Result := i;
+      Break;
+    end;
+  until (Result > -1) or (SL_StopSearch);
+
+  ColorToleranceSpeed(tmpCTS);
+  SetColorspeed2Modifiers(tmpHM, tmpSM);
+end;
+
+function RS_Solve_SandwichLady: Boolean;
+begin
+  if SL_Detect then
+  begin
+    WriteLn('[RML] Detected Sandwich lady');
+    _SL_TimeOut := GetTimeRunning;
+    if not SL_GetSandwichID(_SL_SandwichID) then
+    begin
+      WriteLn('[RML] Unable to get sandwich name. Trying to log out');
+      RS_Logout;
+      Exit;
+    end;
+    SL_ClickContinue; 
+    Wait(1000);
+    if SL_StopSearch then
+    begin
+      WriteLn('[RML] Sandwich Lady select screen not up'); 
+      Exit;
+    end;
+
+    repeat
+      if SL_Select(SL_FindSandwichBoxNumber) then
+      begin
+        WriteLn('[RML] Selected sandwich');
+        Result := True;
+      end;
+    until (Result) or (SL_StopSearch);
+  
+    if Result then
+      WriteLn('[RML] Sandwich Lady: Successfully Solved')
+    else begin
+      WriteLn('[RML] Sandwich Lady: Failed');
+      RS_Logout;
+    end;
+  end;
+end;
+
+
+

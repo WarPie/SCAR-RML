@@ -77,7 +77,52 @@ begin
   Result := False;
 end;
 
-
+{*
+  Matches a pattern string and returns the match.
+  Takes a ignore-char, so we skip what is between then given parts of the ignore char.
+  > Developed by Janilabo!
+*}
+function StrMatches(expr, str: string; ignore: Char; sensitive: Boolean): string;
+var
+  t: TStringArray;
+  h, i, l, p, f: Integer;
+  d: string;
+begin
+  Result := '';
+  l := Length(expr);
+  if ((l > 0) and not (l > Length(str))) then
+  begin
+    d := StringOfChar(ignore, 1);
+    t := Explode(d, expr);
+    h := High(t);
+    f := Pos(t[0], str);
+    l := (f + Length(t[0])); 
+    if ((h > 0) and (f > 0)) then
+    begin
+      case sensitive of
+        True:
+        for i := 1 to h do
+        begin
+          p := PosEx(t[i], str, l);
+          if (p > 0) then
+            l := (p + Length(t[i]))
+          else
+            Exit;
+        end;
+        False:
+        for i := 1 to h do
+        begin
+          p := LastPos(t[i], str);
+          if (p > l) then
+            l := (p + Length(t[i]))
+          else
+            Exit;
+        end;  
+      end;  
+      Result := Copy(str, f, (l - f));      
+    end;
+  end;
+end;
 
 
 

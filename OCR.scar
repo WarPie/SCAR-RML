@@ -2,42 +2,6 @@
 // Optical Character Recognition.
 // - SLACKY
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
-{*
- ....
-*}
-function XT_LoadFontColor(FontPath:String; Color,Tol:Integer): TChars;
-var
-  path:String;
-  TPA:TPointArray;
-  i:Integer;
-  tmp:TSCARBitmap;  
-  B:TBox;
-begin
-  tmp := TSCARBitmap.Create('');
-  SetLength(Result, 256);
-  if not(DirectoryExists(FontPath)) then
-  begin
-    WriteLn('UNABLE TO LOAD FONT: "' + FontPath + '". Path does not exist.'); 
-    Exit;
-  end;
-  for i:=0 to 255 do
-  begin      
-    path := FontPath+'\'+IntToStr(ord(i)) +'.bmp'; 
-    if FileExists(path) then
-    begin
-      tmp.LoadFromBmp(path); 
-      Result[i] := XT_Bmp2Matrix(tmp, False);
-      XT_ImFindColorTolEx(Result[i],TPA,Color,Tol);
-      SetLength(Result[i], 0);
-      B := TPABounds(TPA);
-      Result[i] := XT_NewMatrix((B.x2 - B.x1)+1, (B.y2 - B.y1)+1);
-      XT_MatrixSetTPA(Result[i],TPA,255, Point(B.x1,B.y1));
-      tmp.SetSize(1,1);
-      tmp.Clear(0);
-    end;
-  end;
-end;
-
 
 {*
  ....
@@ -91,6 +55,61 @@ end;
 procedure XT_FreeFont(Font:TChars);
 begin
   SetLength(Font, 0);
+end;
+
+
+{*
+ ...
+*}
+function RS_LoadFont(FontPath:String): TCharsN;
+var
+  path:String;
+  i:Integer;
+  tmp:TSCARBitmap;
+  Mat: T2DIntArray;  
+begin
+  tmp := TSCARBitmap.Create('');
+  SetLength(Result, 256);
+  if not(DirectoryExists(FontPath)) then
+  begin
+    WriteLn('UNABLE TO LOAD FONT: "' + FontPath + '". Path does not exist.'); 
+    Exit;
+  end;
+  for i:=0 to 255 do
+  begin      
+    path := FontPath+'\'+IntToStr(ord(i)) +'.bmp'; 
+    if FileExists(path) then
+    begin
+      if tmp.LoadFromBmp(path) then
+      begin
+        Mat := XT_Bmp2Matrix(tmp, False);
+        XT_ImFindColorTolEx(Mat, Result[i].Pts, $FFFFFF, 10);
+        XT_ImFindColorTolEx(Mat, Result[i].Shadows, 255, 10);
+        Result[i].Width  := Length(Mat[0]);
+        Result[i].Height := Length(Mat);
+        XT_SortTPAByColumn(Result[i].Pts);
+        XT_SortTPAByColumn(Result[i].Shadows);
+        SetLength(Mat, 0);
+      end;
+    end;
+  end;
+  Tmp.Free;
+  SetLength(Mat, 0);
+end;
+
+
+{*
+ ...
+*}
+procedure RS_FreeFont(Font:TCharsN);
+var
+  i:Integer;
+begin
+  for i:=0 to 255 do
+  begin      
+    SetLength(Font[i].Shadows, 0);
+    SetLength(Font[i].Pts, 0);
+  end;
 end;
 
 

@@ -55,3 +55,12 @@ begin
   //Search for flag?
 end;
 
+
+(* 
+  ...
+*)
+function RS_IsWorking: Boolean;
+begin
+  Result := RS_GetAvgPixError(Box(220,125,305,210), 800, 300, False) > 30;
+  //Search for flag?
+end;

@@ -3,3 +3,32 @@
  Contains parts taken from MSSL (By Janilabo).
  All rights reserved. Copying must include this header.
 [=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=}
+function RS_GetCurrentWorld: Integer; 
+begin
+  Result := -1;
+  if RS_OpenTab(RS_Tab_Friends) then
+    Result := StrToInt(GetNumbers(RS_GetTextAtEx(695, 209, 100, RS_UpFont2, ''))); 
+end;
+
+function RS_WorldPlayerCount(World: Integer): Integer;
+var
+  i, players: Integer;  
+  Matches: TRegexMatchArray;
+  Webdata, Match, StrWorld: String;
+begin
+  i := InitializeHTTPClient(True, True); 
+  players := -1;
+  StrWorld := IntToStr(World); 
+  try     
+    Webdata := GetHTTPPage(i, 'http://oldschool.runescape.com/slu');
+    Match := PregMatch('/e\(('+StrWorld+'),(.*?),"oldschool(.*?)",(.*?),(.*?)\);/iM', Webdata); 
+    if Match <> '' then
+    begin 
+      PregMatchEx('/"oldschool(\w+)",(.*?),(.*?)\);/', Match, Matches);  
+      players := StrToInt(Matches[2].MatchedText);
+    end;
+  finally
+    FreeHTTPClient(i);
+  end;
+  Result := players;
+end;

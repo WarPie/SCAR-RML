@@ -224,7 +224,7 @@ begin
   SetLengthATIA(Img, 0);
   if not(Result) then Exit;
   if (Area.X1=0) and (Area.Y1 = 0) then Exit;
-  XT_MoveTPA(TPA, Area.X1, Area.Y1);
+  OffsetTPA(TPA, Area.X1, Area.Y1);
 end;
 
 
