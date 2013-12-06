@@ -12,7 +12,6 @@ var
  Core rutines that may be needed just about everywhere.                                           
 *)
 {$I SCARExt.scar}
-{$I Src/Bitmap.scar}
 {$I Src/Math.scar}
 {$I Src/String.scar}
 {$I Src/Box.scar}
@@ -123,10 +122,11 @@ begin
   FontDir := SelfDir + 'Fonts\';
   BMPDir  := SelfDir + 'Bmps\';
   RS_LoadOCR; 
+  RS_LoadMinimap
   RS_LoadLogin;
   RS_LoadBanking;
   RS_LoadGameTabs;
-   
+  
   t := GetTimeRunning - t;
   WriteLn('[RML] Successfully loaded in '+ IntToStr(t) +' ms');
 end;
@@ -135,6 +135,7 @@ end;
 procedure FreeRML;
 begin
   RS_FreeOCR;
+  RS_FreeMinimap
   RS_FreeLogin;
   RS_FreeBanking;
   RS_FreeGameTabs;
