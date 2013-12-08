@@ -1,5 +1,4 @@
 {$L SCARExt.dll}
-{$L MatchTemplate.dll}
 {=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=]
 || What is this: In short I would define SCAREXT as a grabage collection.
 || Alpha v0.1
